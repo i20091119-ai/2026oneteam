@@ -1,23 +1,138 @@
 <!DOCTYPE html>
-<!-- 이 파일이 게임의 '첫 화면'이 될 파일이야. 지금은 준비 중 안내판이야. -->
+<!-- ===========================================================
+     우리 함께 GO! 🍪
+     원팀 김세은 · 강다영 · 황태준 이 기획한 협력 방탈출 게임
+
+     화면은 세 개야. 한 번에 하나만 보이고 나머지는 숨어 있어.
+       ① 시작 화면   ② 게임 화면   ③ 끝(축하) 화면
+     =========================================================== -->
 <html lang="ko">
 <head>
   <meta charset="UTF-8">
-  <!-- 화면 크기에 맞춰 자동으로 늘어나게 해주는 설정 -->
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>🎮 우리 반 게임 만들기</title>
+  <title>🍪 우리 함께 GO!</title>
   <link rel="stylesheet" href="css/style.css">
+  <link rel="stylesheet" href="css/game.css">
 </head>
-<body>
-  <main class="card">
-    <div class="big-emoji">🎮</div>
-    <h1>게임 준비 중이에요!</h1>
-    <p class="sub">기획서를 받으면 여기에 진짜 게임이 들어갈 거예요.</p>
+<body class="game-body">
 
-    <!-- 조종기가 잘 연결됐는지 확인하러 가는 버튼 -->
-    <a class="btn" href="input-test.html">🕹️ 조종기 점검하러 가기</a>
+<!-- ==================== ① 시작 화면 ==================== -->
+<section class="screen active" id="screen-start">
+  <div class="start-box">
 
-    <p class="hint">아두이노 우노Q에서도 이 주소를 열면 똑같이 보여요.</p>
-  </main>
+    <!-- 제목 -->
+    <h1 class="title">우리 함께 <span class="go">GO!</span></h1>
+    <p class="tagline">단서를 얻어 협력하여 스테이지를 깨는 게임</p>
+
+    <!-- 주인공 캐릭터 세 명 (도형으로 그려서 넣을 자리) -->
+    <canvas id="heroCanvas" width="420" height="150"></canvas>
+    <p class="hero-names">
+      <span class="n red">세은</span>
+      <span class="n green">다영</span>
+      <span class="n yellow">태준</span>
+    </p>
+
+    <!-- 이야기 -->
+    <p class="story">
+      싸우기만 하고 협력이 안 되는 친구들에게<br>
+      마법사는 <b>협력게임 세상</b>에 세 친구를 가두어 버렸다…
+    </p>
+
+    <div class="start-buttons">
+      <button class="btn big" id="startBtn">▶ 게임 시작</button>
+      <button class="btn ghost" id="settingsBtn">⚙️ 설정</button>
+    </div>
+
+    <p class="made-by">만든 사람 · 원팀 김세은 강다영 황태준</p>
+  </div>
+</section>
+
+
+<!-- ==================== ② 게임 화면 ==================== -->
+<section class="screen" id="screen-game">
+
+  <!-- 위쪽 정보 막대 — 점수는 게임 중에 항상 보여! -->
+  <header class="hud">
+    <div class="hud-left">
+      <span class="stage-name" id="stageName">연습 구역</span>
+      <span class="section-name" id="sectionName">–</span>
+    </div>
+
+    <div class="hud-center">
+      <!-- ⭐ 별 점수 -->
+      <span class="stars" id="starBox">⭐ <b id="starCount">0</b></span>
+      <!-- ⏱ 시간 -->
+      <span class="timer" id="timerBox">⏱ <b id="timeCount">0.0</b>초</span>
+    </div>
+
+    <div class="hud-right">
+      <button class="icon-btn" id="soundBtn" title="소리 켜기/끄기">🔊</button>
+      <button class="icon-btn" id="pauseBtn" title="정지">⏸️</button>
+    </div>
+  </header>
+
+  <!-- 게임 그림이 그려지는 도화지 -->
+  <div class="stage-wrap">
+    <canvas id="gameCanvas" width="960" height="540"></canvas>
+  </div>
+
+  <!-- 아래쪽 — 누가 어떤 조종기를 쓰는지 + 버튼 안내 -->
+  <footer class="playbar">
+    <div class="players" id="playerBar"><!-- 자바스크립트가 채워줘 --></div>
+    <button class="btn tiny" id="helpBtn">🎮 버튼 보기</button>
+  </footer>
+</section>
+
+
+<!-- ==================== ③ 끝(축하) 화면 ==================== -->
+<section class="screen" id="screen-clear">
+  <canvas id="fireworkCanvas"></canvas>
+  <div class="clear-box">
+    <div class="big-emoji">🎉</div>
+    <h1>탈출 성공!</h1>
+    <p class="clear-sub" id="clearSub">함께 힘을 모아 해냈어요!</p>
+
+    <div class="star-row" id="clearStars">⭐</div>
+    <p class="clear-time" id="clearTime">걸린 시간 0.0초</p>
+
+    <div class="start-buttons">
+      <button class="btn big" id="againBtn">🔁 다시 하기</button>
+      <button class="btn ghost" id="homeBtn">🏠 처음으로</button>
+    </div>
+  </div>
+</section>
+
+
+<!-- ==================== 설정 / 버튼 안내 창 ==================== -->
+<div class="overlay" id="overlay">
+  <div class="overlay-box">
+    <h2 id="overlayTitle">🎮 조작 방법</h2>
+
+    <!-- 조종기 버튼 안내 -->
+    <h3>🕹️ 아케이드 조종기</h3>
+    <div class="key-grid" id="padGuide"></div>
+
+    <!-- 키보드 안내 -->
+    <h3>⌨️ 키보드 (조종기가 모자랄 때)</h3>
+    <div class="key-grid" id="keyGuide"></div>
+
+    <!-- 소리 스위치 -->
+    <h3>🔊 소리</h3>
+    <button class="btn small" id="soundToggle">소리 켜짐 🔊</button>
+
+    <div class="overlay-foot">
+      <button class="btn big" id="closeOverlay">닫기</button>
+      <a class="btn ghost tiny" href="input-test.html">🕹️ 조종기 점검기</a>
+    </div>
+  </div>
+</div>
+
+
+<!-- 게임을 움직이는 부품들을 순서대로 불러와 -->
+<script src="js/input.js"></script>
+<script src="js/audio.js"></script>
+<script src="js/characters.js"></script>
+<script src="js/stages.js"></script>
+<script src="js/game.js"></script>
 </body>
 </html>

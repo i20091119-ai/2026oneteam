@@ -1,0 +1,303 @@
+/* ===========================================================
+   game.css — 게임 화면 옷 입히기 👗
+   =========================================================== */
+
+/* 게임 페이지는 화면을 꽉 채워야 해서 body 설정을 조금 바꿔줘 */
+.game-body {
+  display: block;
+  padding: 0;
+  overflow: hidden;          /* 스크롤바가 안 생기게 */
+  height: 100vh;
+}
+
+/* -----------------------------------------------------------
+   화면 3개 — 한 번에 하나만 보이게 하는 규칙
+   ----------------------------------------------------------- */
+.screen {
+  position: fixed;           /* 화면에 딱 붙여놓기 */
+  inset: 0;                  /* 위아래좌우 전부 0 = 꽉 채우기 */
+  display: none;             /* 기본은 숨김 */
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+}
+/* .active 가 붙은 화면만 보여! */
+.screen.active { display: flex; }
+
+
+/* ==================== ① 시작 화면 ==================== */
+.start-box {
+  background: rgba(255, 255, 255, .88);
+  border-radius: 32px;
+  box-shadow: var(--shadow);
+  padding: 28px 40px 24px;
+  text-align: center;
+  max-width: 620px;
+  width: min(92vw, 620px);
+}
+
+.title {
+  font-size: clamp(30px, 6vw, 48px);   /* 화면 크기에 따라 글자도 커졌다 작아졌다 */
+  margin: 0;
+  letter-spacing: -1px;
+}
+/* 'GO!' 글자에 무지개색 입히기 */
+.title .go {
+  background: linear-gradient(90deg, #ff7a85, #ffd45e, #8fd67f);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+
+.tagline { color: var(--ink-soft); margin: 6px 0 10px; font-size: 15px; }
+
+#heroCanvas { max-width: 100%; height: auto; }
+
+.hero-names { display: flex; justify-content: center; gap: 42px; margin: 0 0 14px; }
+.hero-names .n { font-weight: 800; font-size: 16px; }
+.hero-names .red    { color: #d94f5e; }
+.hero-names .green  { color: #5aa84c; }
+.hero-names .yellow { color: #c99a10; }
+
+.story {
+  background: #fff6fa;
+  border-radius: 18px;
+  padding: 14px;
+  font-size: 14px;
+  line-height: 1.7;
+  color: #6b6178;
+  margin: 0 0 20px;
+}
+
+.start-buttons { display: flex; gap: 12px; justify-content: center; flex-wrap: wrap; }
+.made-by { font-size: 12px; color: var(--ink-soft); margin: 18px 0 0; }
+
+
+/* ==================== 버튼 모양들 ==================== */
+.btn.big   { font-size: 20px; padding: 16px 40px; background: var(--mint); box-shadow: 0 6px 0 #7fcfae; }
+.btn.big:hover  { box-shadow: 0 8px 0 #7fcfae; }
+.btn.big:active { box-shadow: 0 2px 0 #7fcfae; }
+
+.btn.small { padding: 10px 22px; font-size: 15px; }
+.btn.tiny  { padding: 8px 16px;  font-size: 13px; }
+
+.btn.ghost {
+  background: #fff;
+  color: var(--ink);
+  box-shadow: 0 6px 0 #e6e0f0;
+}
+.btn.ghost:hover  { box-shadow: 0 8px 0 #e6e0f0; }
+.btn.ghost:active { box-shadow: 0 2px 0 #e6e0f0; }
+
+
+/* ==================== ② 게임 화면 ==================== */
+#screen-game { justify-content: space-between; padding: 0; }
+
+/* --- 위쪽 정보 막대 --- */
+.hud {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 10px 18px;
+  background: rgba(255, 255, 255, .82);
+  backdrop-filter: blur(6px);        /* 뒤가 살짝 흐리게 보여 (유리 느낌) */
+  box-shadow: 0 2px 12px rgba(120,100,160,.12);
+  flex: 0 0 auto;
+}
+
+.hud-left  { display: flex; flex-direction: column; min-width: 120px; }
+.stage-name   { font-weight: 800; font-size: 16px; }
+.section-name { font-size: 12px; color: var(--ink-soft); }
+
+.hud-center { display: flex; gap: 12px; align-items: center; }
+
+/* ⭐ 점수 상자 — 항상 잘 보이게 크고 진하게! */
+.stars, .timer {
+  background: #fff;
+  border-radius: 999px;
+  padding: 8px 18px;
+  font-size: 17px;
+  font-weight: 800;
+  box-shadow: inset 0 0 0 3px #f2ecff;
+  white-space: nowrap;
+}
+.stars b { color: #e8a51c; }
+.timer   { font-size: 15px; }
+.timer b { color: #7a6fa0; }
+
+/* 별을 얻으면 통! 하고 커졌다 돌아오는 효과 */
+.stars.pop { animation: starPop .45s ease-out; }
+@keyframes starPop {
+  0%   { transform: scale(1);   }
+  40%  { transform: scale(1.28); }
+  100% { transform: scale(1);   }
+}
+
+.hud-right { display: flex; gap: 8px; }
+.icon-btn {
+  border: none;
+  background: #fff;
+  border-radius: 14px;
+  width: 42px; height: 42px;
+  font-size: 19px;
+  cursor: pointer;
+  box-shadow: inset 0 0 0 3px #f2ecff;
+  transition: transform .1s;
+}
+.icon-btn:hover  { transform: scale(1.08); }
+.icon-btn:active { transform: scale(.94); }
+
+/* --- 가운데 도화지 --- */
+.stage-wrap {
+  flex: 1 1 auto;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  padding: 10px;
+  min-height: 0;             /* 이게 있어야 캔버스가 넘치지 않아 */
+}
+#gameCanvas {
+  max-width: 100%;
+  max-height: 100%;
+  border-radius: 22px;
+  box-shadow: var(--shadow);
+  background: #fff;
+  image-rendering: auto;
+}
+
+/* --- 아래쪽 플레이어 막대 --- */
+.playbar {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  padding: 8px 14px 12px;
+  flex-wrap: wrap;
+  flex: 0 0 auto;
+}
+
+.players { display: flex; gap: 8px; flex-wrap: wrap; justify-content: center; }
+
+/* 친구 한 명을 나타내는 알약 */
+.pcard {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  background: #fff;
+  border-radius: 999px;
+  padding: 7px 15px;
+  font-size: 13px;
+  font-weight: 700;
+  box-shadow: inset 0 0 0 3px #f2ecff;
+}
+.pcard .dot { width: 13px; height: 13px; border-radius: 50%; }
+.pcard .src { color: var(--ink-soft); font-weight: 600; font-size: 12px; }
+/* 조종기가 연결된 친구는 테두리에 색이 들어와 */
+.pcard.pad { box-shadow: inset 0 0 0 3px #a8e6cf; }
+
+
+/* ==================== ③ 끝 화면 ==================== */
+#screen-clear { position: fixed; }
+#fireworkCanvas {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;      /* 폭죽이 버튼 클릭을 방해하지 않게 */
+}
+.clear-box {
+  position: relative;        /* 폭죽 위에 올라오게 */
+  background: rgba(255,255,255,.92);
+  border-radius: 32px;
+  box-shadow: var(--shadow);
+  padding: 34px 44px;
+  text-align: center;
+  max-width: 520px;
+  width: min(92vw, 520px);
+}
+.clear-sub  { color: var(--ink-soft); margin: 4px 0 16px; }
+.star-row   { font-size: 46px; letter-spacing: 6px; margin-bottom: 6px; }
+.clear-time { color: var(--ink-soft); font-size: 14px; margin: 0 0 22px; }
+
+
+/* ==================== 설정 / 버튼 안내 창 ==================== */
+.overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(74, 68, 88, .45);
+  display: none;                  /* 기본은 숨김 */
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+  z-index: 50;                    /* 제일 위에 뜨게 */
+}
+.overlay.active { display: flex; }
+
+.overlay-box {
+  background: #fff;
+  border-radius: 28px;
+  padding: 26px 30px;
+  max-width: 640px;
+  width: 100%;
+  max-height: 88vh;
+  overflow-y: auto;               /* 내용이 길면 안에서 스크롤 */
+  box-shadow: var(--shadow);
+  animation: slideUp .25s ease-out;
+}
+@keyframes slideUp {
+  from { transform: translateY(24px); opacity: 0; }
+  to   { transform: translateY(0);    opacity: 1; }
+}
+
+.overlay-box h2 { margin: 0 0 16px; text-align: center; }
+.overlay-box h3 {
+  margin: 20px 0 10px;
+  font-size: 15px;
+  color: var(--ink-soft);
+}
+
+/* 버튼 안내를 두 줄씩 예쁘게 늘어놓기 */
+.key-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+  gap: 8px;
+}
+.key-item {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  background: #faf8ff;
+  border-radius: 14px;
+  padding: 9px 13px;
+  font-size: 13px;
+}
+/* 버튼 이름이 적힌 작은 키캡 */
+.keycap {
+  background: #fff;
+  border-radius: 8px;
+  padding: 4px 9px;
+  font-weight: 800;
+  font-size: 12px;
+  box-shadow: 0 2px 0 #e0d8f0, inset 0 0 0 2px #efe9ff;
+  white-space: nowrap;
+}
+
+.overlay-foot {
+  display: flex;
+  gap: 10px;
+  justify-content: center;
+  align-items: center;
+  margin-top: 24px;
+  flex-wrap: wrap;
+}
+
+/* 화면이 작을 때 정보 막대를 조금 줄여줘 */
+@media (max-width: 640px) {
+  .hud { padding: 8px 10px; }
+  .stars, .timer { padding: 6px 12px; font-size: 15px; }
+  .stage-name { font-size: 14px; }
+}
