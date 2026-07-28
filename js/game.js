@@ -90,6 +90,11 @@ function currentSection() { return currentStage().sections[game.sectionIndex]; }
 function loadSection() {
   const sec = currentSection();
 
+  // 문과 버튼을 모두 '꺼짐' 상태로 되돌려 놔
+  // (다시 하기를 눌렀을 때 문이 열린 채로 남아 있으면 안 되니까!)
+  (sec.doors   || []).forEach(d => d.open = false);
+  (sec.buttons || []).forEach(b => b.on   = false);
+
   game.players = HEROES.map((hero, i) => {
     const sp = sec.spawns[i] || sec.spawns[0];
     return {
@@ -100,7 +105,8 @@ function loadSection() {
       facing: 1,            // 1=오른쪽, -1=왼쪽
       walk: 0,              // 걷는 동작 숫자
       crouch: false,
-      atExit: false         // 문 앞에 도착했나?
+      atExit: false,        // 출구에 도착했나?
+      hurt: 0               // 방금 가시에 닿았으면 잠깐 깜빡여
     };
   });
 
@@ -117,8 +123,20 @@ function loadSection() {
    ⑤ 캐릭터 움직이기
    ----------------------------------------------------------- */
 
+/* -----------------------------------------------------------
+   부딪히는 것들 모으기
+
+   발판·벽 + '아직 닫혀 있는 문'을 합쳐서 돌려줘.
+   문이 열리면 목록에서 빠지니까 그냥 지나갈 수 있어!
+   ----------------------------------------------------------- */
+function getSolids(sec) {
+  const base = sec.type === 'platform' ? sec.platforms : sec.walls;
+  const closedDoors = (sec.doors || []).filter(d => !d.open);
+  return base.concat(closedDoors);
+}
+
 /* --- 옆에서 보는 점프맵에서 움직이기 --- */
-function movePlatform(p, pad, sec) {
+function movePlatform(p, pad, sec, solids) {
   // 웅크리기 (RB 버튼)
   p.crouch = pad.isHeld('crouch') && p.onGround;
 
@@ -148,7 +166,7 @@ function movePlatform(p, pad, sec) {
 
   // --- 좌우로 움직이고 벽에 부딪히는지 확인 ---
   p.x += p.vx;
-  for (const plat of sec.platforms) {
+  for (const plat of solids) {
     if (hitBox(p, height, plat)) {
       // 오른쪽으로 가다 부딪혔으면 벽 왼쪽에 딱 붙여줘
       if (p.vx > 0) p.x = plat.x - P_W / 2;
@@ -161,7 +179,7 @@ function movePlatform(p, pad, sec) {
   const wasInAir = !p.onGround;
   p.onGround = false;
   p.y += p.vy;
-  for (const plat of sec.platforms) {
+  for (const plat of solids) {
     if (hitBox(p, height, plat)) {
       if (p.vy > 0) {                 // 떨어지는 중이었다면 → 바닥에 착지!
         p.y = plat.y;
@@ -180,16 +198,20 @@ function movePlatform(p, pad, sec) {
   if (p.x > CANVAS_W - P_W / 2) p.x = CANVAS_W - P_W / 2;
 
   // 아래로 떨어지면 시작 자리로 되돌려줘 (지는 건 없으니까 다시 하면 돼!)
-  if (p.y > CANVAS_H + 100) {
-    const i = game.players.indexOf(p);
-    const sp = sec.spawns[i] || sec.spawns[0];
-    p.x = sp.x; p.y = sp.y; p.vx = 0; p.vy = 0;
-    sound.wrong();
-  }
+  if (p.y > CANVAS_H + 100) respawn(p, sec);
+}
+
+/* 시작 자리로 되돌려 보내는 함수 */
+function respawn(p, sec) {
+  const i = game.players.indexOf(p);
+  const sp = sec.spawns[i] || sec.spawns[0];
+  p.x = sp.x; p.y = sp.y; p.vx = 0; p.vy = 0;
+  p.hurt = 30;              // 잠깐 깜빡이게 표시
+  sound.wrong();
 }
 
 /* --- 위에서 내려다보는 방에서 움직이기 (중력 없음!) --- */
-function moveRoom(p, pad, sec) {
+function moveRoom(p, pad, sec, solids) {
   const speed = pad.isHeld('run') ? RUN_SPEED * 0.8 : WALK_SPEED * 0.9;
 
   // 네 방향 모두 자유롭게 움직여
@@ -204,7 +226,7 @@ function moveRoom(p, pad, sec) {
 
   // 좌우 이동 + 벽 부딪힘
   p.x += p.vx;
-  for (const w of sec.walls) {
+  for (const w of solids) {
     if (hitBox(p, P_H, w)) {
       if (p.vx > 0) p.x = w.x - P_W / 2;
       if (p.vx < 0) p.x = w.x + w.w + P_W / 2;
@@ -213,7 +235,7 @@ function moveRoom(p, pad, sec) {
 
   // 위아래 이동 + 벽 부딪힘
   p.y += p.vy;
-  for (const w of sec.walls) {
+  for (const w of solids) {
     if (hitBox(p, P_H, w)) {
       if (p.vy > 0) p.y = w.y;
       if (p.vy < 0) p.y = w.y + w.h + P_H;
@@ -243,22 +265,54 @@ function hitBox(p, height, box) {
 
 
 /* -----------------------------------------------------------
-   ⑥ 규칙 확인하기
-   ⚠️ 지금은 '연습용 임시 규칙'이야.
-      세 친구가 모두 문 앞에 모이면 다음 구역으로 넘어가.
-      진짜 규칙(색깔 문, 단서, 비밀번호)은 다음에 만들 거야!
+   ⑥ 게임 규칙 확인하기
    ----------------------------------------------------------- */
-function checkRules() {
-  const sec = currentSection();
-  const exit = sec.exit;
 
-  // 세 친구가 모두 문에 닿았는지 확인
+/* --- 색깔 버튼: 같은 색 친구가 밟고 있나? --- */
+function updateButtons(sec) {
+  if (!sec.buttons) return;
+  for (const b of sec.buttons) {
+    // b.color 번 친구(0=세은, 1=다영, 2=태준)만 이 버튼을 누를 수 있어!
+    const owner = game.players[b.color];
+    b.on = owner ? hitBox(owner, P_H, b) : false;
+  }
+}
+
+/* --- 색깔 문: 같은 색 버튼이 눌려 있으면 열려 --- */
+function updateDoors(sec) {
+  if (!sec.doors) return;
+  for (const d of sec.doors) {
+    let open = false;
+    for (const b of (sec.buttons || [])) {
+      if (b.color === d.color && b.on) { open = true; break; }
+    }
+
+    // 방금 열렸거나 방금 닫혔으면 소리를 내줘
+    if (open !== d.open) {
+      d.open = open;
+      open ? sound.door() : sound.shut();
+    }
+  }
+}
+
+/* --- 🪤 장애물(가시)에 닿으면 시작 자리로 --- */
+function checkSpikes(sec) {
+  if (!sec.spikes) return;
+  for (const p of game.players) {
+    if (p.hurt > 0) { p.hurt--; continue; }   // 방금 다쳤으면 잠깐 봐줘
+    for (const s of sec.spikes) {
+      if (hitBox(p, p.crouch ? P_H_CROUCH : P_H, s)) { respawn(p, sec); break; }
+    }
+  }
+}
+
+/* --- 출구: 세 친구가 모두 모이면 다음 구역으로! --- */
+function checkExit(sec) {
   let allAtExit = true;
   for (const p of game.players) {
-    p.atExit = hitBox(p, P_H, exit);
+    p.atExit = hitBox(p, P_H, sec.exit);
     if (!p.atExit) allAtExit = false;
   }
-
   if (allAtExit) nextSection();
 }
 
@@ -314,7 +368,7 @@ function draw() {
   // --- 배경에 떠다니는 몽글몽글 구름 ---
   drawClouds();
 
-  // --- 문 그리기 (다음 구역으로 가는 곳) ---
+  // --- 출구 문 그리기 (다음 구역으로 가는 곳) ---
   drawDoor(sec.exit);
 
   // --- 발판 / 벽 그리기 (삐뚤빼뚤 손그림!) ---
@@ -328,10 +382,22 @@ function draw() {
       '#d9c6b0', i * 17 + 3, 2.5);
   });
 
+  // --- 🪤 가시 그리기 ---
+  (sec.spikes || []).forEach((s, i) => drawSpikes(s, i));
+
+  // --- 색깔 버튼 그리기 ---
+  (sec.buttons || []).forEach((b, i) => drawColorButton(b, i));
+
+  // --- 색깔 문 그리기 ---
+  (sec.doors || []).forEach((d, i) => drawColorDoor(d, i));
+
   // --- 세 친구 그리기 ---
   for (const p of game.players) {
     const isMoving = Math.abs(p.vx) > 0.4 || (sec.type === 'room' && Math.abs(p.vy) > 0.4);
     if (isMoving) p.walk += 1;      // 움직일 때만 걷는 동작이 넘어가
+
+    // 가시에 닿은 직후엔 깜빡깜빡 (다쳤다는 표시)
+    ctx.globalAlpha = (p.hurt > 0 && Math.floor(p.hurt / 4) % 2 === 0) ? 0.35 : 1;
 
     drawGingerbread(ctx, p.x, p.y, P_H, p.hero, {
       facing: p.facing,
@@ -341,15 +407,18 @@ function draw() {
       crouch: p.crouch
     });
 
-    // 문 앞에 도착한 친구 머리 위엔 반짝 표시!
+    // 출구에 도착한 친구 머리 위엔 반짝 표시!
     if (p.atExit) drawActiveMark(ctx, p.x, p.y, P_H, p.hero, game.time);
   }
+  ctx.globalAlpha = 1;
 
   // --- 안내 글씨 ---
-  ctx.fillStyle = 'rgba(90,80,110,.55)';
+  ctx.fillStyle = 'rgba(90,80,110,.6)';
   ctx.font = 'bold 15px sans-serif';
   ctx.textAlign = 'center';
-  ctx.fillText('세 친구가 모두 문 앞에 모이면 열려요!', CANVAS_W / 2, 34);
+  ctx.fillText('같은 색 친구가 같은 색 버튼을 밟고 있어야 문이 열려요!', CANVAS_W / 2, 30);
+  ctx.font = 'bold 13px sans-serif';
+  ctx.fillText('셋이 모두 🚪출구에 모이면 다음 구역으로!', CANVAS_W / 2, 50);
   ctx.textAlign = 'left';
 }
 
@@ -370,6 +439,104 @@ function drawClouds() {
   }
   ctx.restore();
 }
+
+/* -----------------------------------------------------------
+   🪤 가시 그리기 — 삐뚤빼뚤한 삼각형을 줄줄이
+   ----------------------------------------------------------- */
+function drawSpikes(s, seed) {
+  ctx.save();
+  ctx.fillStyle   = '#b0b6c2';
+  ctx.strokeStyle = '#5c6472';
+  ctx.lineWidth   = 3;
+  ctx.lineJoin    = 'round';
+
+  const count = Math.max(2, Math.round(s.w / 22));   // 가시 개수
+  const step  = s.w / count;
+
+  for (let i = 0; i < count; i++) {
+    const x = s.x + step * i;
+    ctx.beginPath();
+    ctx.moveTo(x + wob(seed + i) * 2,             s.y + s.h);
+    ctx.lineTo(x + step / 2 + wob(seed + i + 3) * 3, s.y + wob(seed + i + 5) * 4);
+    ctx.lineTo(x + step + wob(seed + i + 7) * 2,  s.y + s.h);
+    ctx.closePath();
+    ctx.fill();
+    ctx.stroke();
+  }
+  ctx.restore();
+}
+
+
+/* -----------------------------------------------------------
+   색깔 버튼 그리기 🔘
+   같은 색 친구가 밟으면 쑥 들어가면서 반짝여!
+   ----------------------------------------------------------- */
+function drawColorButton(b, seed) {
+  const hero = HEROES[b.color];
+  ctx.save();
+  ctx.lineWidth   = 3.5;
+  ctx.strokeStyle = hero.dark;
+  ctx.lineJoin    = 'round';
+
+  // 눌리면 살짝 아래로 내려가고 납작해져
+  const press = b.on ? 4 : 0;
+
+  sloppyFill(ctx,
+    () => wobbleRect(ctx, b.x, b.y + press, b.w, b.h - press * 0.5, seed * 31 + 1, 3),
+    b.on ? hero.color : '#efe7dc', seed * 37 + 2, 2);
+
+  // 눌려 있으면 위로 반짝반짝 올라가는 표시
+  if (b.on) {
+    ctx.globalAlpha = 0.55 + Math.sin(game.time * 0.012) * 0.35;
+    ctx.fillStyle = hero.color;
+    for (let i = 0; i < 3; i++) {
+      wobbleCircle(ctx, b.x + b.w * (0.25 + i * 0.25), b.y - 14 - i * 3, 4,
+                   seed + i * 9, 0.4);
+      ctx.fill();
+    }
+  }
+  ctx.restore();
+}
+
+
+/* -----------------------------------------------------------
+   색깔 문 그리기 🚪
+   닫혀 있으면 꽉 막힌 색 문, 열리면 문틀만 남아
+   ----------------------------------------------------------- */
+function drawColorDoor(d, seed) {
+  const hero = HEROES[d.color];
+  ctx.save();
+  ctx.lineWidth = 3.5;
+  ctx.lineJoin  = 'round';
+
+  if (d.open) {
+    // 열린 문 — 점선 문틀만 흐릿하게 남겨
+    ctx.globalAlpha = 0.45;
+    ctx.setLineDash([8, 7]);
+    ctx.strokeStyle = hero.dark;
+    wobbleRect(ctx, d.x, d.y, d.w, d.h, seed * 41 + 5, 3);
+    ctx.stroke();
+    ctx.setLineDash([]);
+  } else {
+    // 닫힌 문 — 꽉 막힌 색 문
+    ctx.strokeStyle = hero.dark;
+    sloppyFill(ctx,
+      () => wobbleRect(ctx, d.x, d.y, d.w, d.h, seed * 41 + 5, 3),
+      hero.color, seed * 43 + 6, 2);
+
+    // 문 가운데에 빗금 무늬를 그어서 '막혔다'는 느낌을 줘
+    ctx.strokeStyle = hero.dark;
+    ctx.lineWidth = 2.5;
+    ctx.globalAlpha = 0.5;
+    for (let i = 1; i < 4; i++) {
+      const yy = d.y + (d.h / 4) * i;
+      wobbleLine(ctx, d.x + 4, yy, d.x + d.w - 4, yy, seed * 7 + i, 3);
+      ctx.stroke();
+    }
+  }
+  ctx.restore();
+}
+
 
 /* 대충 그린 문 🚪 */
 function drawDoor(d) {
@@ -402,16 +569,24 @@ function loop(now) {
     input.update();              // ① 조종기 신호 받기
 
     const sec = currentSection();
+
+    // ② 버튼과 문 상태를 먼저 확인해
+    //    (움직이기 전에 해야 열린 문을 제대로 통과할 수 있어!)
+    updateButtons(sec);
+    updateDoors(sec);
+    const solids = getSolids(sec);
+
+    // ③ 캐릭터 움직이기 (구역 종류에 맞는 방법으로)
     for (let i = 0; i < game.players.length; i++) {
       const p = game.players[i];
       const pad = input.players[i];
-      // ② 캐릭터 움직이기 (구역 종류에 맞는 방법으로)
-      if (sec.type === 'platform') movePlatform(p, pad, sec);
-      else                         moveRoom(p, pad, sec);
+      if (sec.type === 'platform') movePlatform(p, pad, sec, solids);
+      else                         moveRoom(p, pad, sec, solids);
     }
 
-    checkRules();                // 규칙 확인
-    draw();                      // ③ 그림 그리기
+    checkSpikes(sec);            // 가시에 닿았나?
+    checkExit(sec);              // 셋이 출구에 모였나?
+    draw();                      // ④ 그림 그리기
 
     // 시간 재기
     game.elapsed = (now - game.startTime) / 1000;

@@ -90,6 +90,7 @@ class SoundBox {
   land()     { this.beep(180, 0.06, 'sine', 0.10); }              // 착지: 톡
   clue()     { this.melody([[660,.08],[880,.14]], 'triangle'); }  // 단서 획득: 딩동!
   door()     { this.melody([[440,.09],[554,.09],[659,.16]]); }    // 문 열림: 띠리링
+  shut()     { this.melody([[420,.07],[260,.13]], 'square', .12); } // 문 닫힘: 쿵!
   wrong()    { this.beep(150, 0.22, 'sawtooth', 0.12); }          // 틀림: 부웅
   select()   { this.beep(700, 0.05, 'square', 0.10); }            // 메뉴 고르기: 딱
   swap()     { this.beep(600, 0.06, 'triangle', 0.10); }          // 캐릭터 바꾸기
