@@ -1461,27 +1461,45 @@ const heroCtx = heroCanvas.getContext('2d');
 
 function drawHeroes(now) {
   updateDoodleSeed(now);
-  heroCtx.clearRect(0, 0, heroCanvas.width, heroCanvas.height);
+
+  // 화면 크기에 맞춰 도화지 크기를 정해줘.
+  // 큰 모니터에서는 진저맨도 크게 그려야 허전하지 않아!
+  const cssW = heroCanvas.clientWidth || 440;
+  if (Math.abs(heroCanvas.width - cssW) > 2) {
+    heroCanvas.width  = cssW;
+    heroCanvas.height = Math.round(cssW * 0.30);
+  }
+
+  const W = heroCanvas.width;
+  const H = heroCanvas.height;
+  heroCtx.clearRect(0, 0, W, H);
+
+  const size = Math.max(70, W * 0.16);      // 진저맨 키
+  const gap  = W / 4;                       // 세 명 사이 간격
 
   HEROES.forEach((hero, i) => {
+    const x = gap * (i + 1);
     // 세 친구가 번갈아가며 폴짝폴짝 뛰게 만들어
-    const bounce = Math.abs(Math.sin(now * 0.003 + i * 0.8)) * 16;
-    drawGingerbread(heroCtx, 80 + i * 140, 138 - bounce, 76, hero, {
+    const bounce = Math.abs(Math.sin(now * 0.003 + i * 0.8)) * size * 0.22;
+    const y = H - size * 0.12 - bounce;
+
+    drawGingerbread(heroCtx, x, y, size, hero, {
       facing: 1,
       walk: now * 0.15,
       moving: true,
-      jumping: bounce > 10
+      jumping: bounce > size * 0.14
     });
 
     // 이름표 달아주기 (그림에 있던 것처럼!)
     heroCtx.save();
-    heroCtx.font = 'bold 15px sans-serif';
+    heroCtx.font = 'bold ' + Math.round(size * 0.22) + 'px sans-serif';
     heroCtx.textAlign = 'center';
-    heroCtx.lineWidth = 4;
+    heroCtx.lineWidth = Math.max(4, size * 0.06);
+    heroCtx.lineJoin = 'round';
     heroCtx.strokeStyle = '#fff';                 // 흰 테두리를 먼저 그리면
-    heroCtx.strokeText(hero.name, 80 + i * 140, 20);
+    heroCtx.strokeText(hero.name, x, y - size * 1.28);
     heroCtx.fillStyle = hero.dark;                // 글자가 또렷하게 보여
-    heroCtx.fillText(hero.name, 80 + i * 140, 20);
+    heroCtx.fillText(hero.name, x, y - size * 1.28);
     heroCtx.restore();
   });
 

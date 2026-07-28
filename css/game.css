@@ -33,6 +33,9 @@
 #screen-start {
   overflow: hidden;
   justify-content: center;
+  /* 아래쪽에 빈자리를 만들어서 글자 묶음을 위로 올려줘.
+     그래야 잔디밭이 진저맨 차지가 돼! */
+  padding-bottom: clamp(120px, 26vh, 300px);
 }
 
 /* --- 파란 하늘 --- */
@@ -75,14 +78,15 @@
   100% { margin-left: 0; }
 }
 
-/* --- 진저맨 세 명이 잔디밭에서 폴짝폴짝 --- */
+/* --- 진저맨 세 명이 잔디밭에서 폴짝폴짝 ---
+   화면이 커지면 진저맨도 같이 커져야 허전하지 않아! --- */
 #heroCanvas {
   position: absolute;
-  bottom: 5%;
+  bottom: 2%;
   left: 50%;
   transform: translateX(-50%);
   z-index: 2;
-  max-width: 96vw;
+  width: min(88vw, 760px);
   height: auto;
   pointer-events: none;      /* 그림이 버튼 클릭을 막지 않게 */
 }
@@ -131,7 +135,7 @@
   align-items: center;
   gap: .02em;
   transform: rotate(-5deg);
-  font-size: clamp(38px, 9vw, 92px);
+  font-size: clamp(42px, 11vw, 150px);
   font-weight: 900;
   line-height: .95;
   letter-spacing: .02em;
@@ -160,6 +164,25 @@
   80%           { transform: translateY(-8px); }
 }
 
+/* --- 이야기 --- */
+.story {
+  position: relative;
+  z-index: 2;
+  margin: 0 0 clamp(14px, 3vh, 28px);
+  text-align: center;
+  font-size: clamp(14px, 1.6vw, 20px);
+  font-weight: 700;
+  line-height: 1.65;
+  color: #fff;
+  /* 하늘 위에 있어서 그냥 흰 글씨면 잘 안 보여.
+     그림자를 여러 겹 겹쳐서 검은 테두리처럼 만들어줘! */
+  text-shadow:
+     0 2px 0 rgba(20,30,60,.55),
+     2px 0 0 rgba(20,30,60,.35),
+    -2px 0 0 rgba(20,30,60,.35);
+}
+.story b { color: #ffe36b; }
+
 /* --- 나무 판자 버튼 --- */
 .wood-buttons {
   position: relative;
@@ -173,9 +196,9 @@
 .wood {
   border: none;
   cursor: pointer;
-  padding: 16px 52px;
+  padding: clamp(14px, 1.6vh, 22px) clamp(44px, 5vw, 76px);
   border-radius: 6px;
-  font-size: clamp(20px, 3.4vw, 30px);
+  font-size: clamp(20px, 2.6vw, 38px);
   font-weight: 800;
   color: #46260a;
   letter-spacing: .04em;
@@ -190,7 +213,7 @@
   transform: rotate(-1.2deg);
   transition: transform .12s, box-shadow .12s;
 }
-.wood.small { padding: 12px 34px; font-size: clamp(16px, 2.6vw, 22px); transform: rotate(1deg); }
+.wood.small { padding: clamp(10px,1.2vh,16px) clamp(30px,3.4vw,52px); font-size: clamp(16px, 1.9vw, 26px); transform: rotate(1deg); }
 
 .wood:hover  { transform: rotate(-1.2deg) translateY(-3px); box-shadow: 0 10px 0 #7d4d16, inset 0 0 0 3px rgba(255,255,255,.18); }
 .wood:active { transform: rotate(-1.2deg) translateY(5px);  box-shadow: 0 2px 0 #7d4d16,  inset 0 0 0 3px rgba(255,255,255,.18); }
@@ -200,11 +223,12 @@
 
 .made-by {
   position: absolute;
-  bottom: 12px;
-  z-index: 2;
-  font-size: 13px;
-  font-weight: 700;
-  color: #3f6b12;
+  bottom: 10px;
+  z-index: 3;
+  font-size: clamp(12px, 1vw, 16px);
+  font-weight: 800;
+  color: #eaffd0;
+  text-shadow: 0 1px 2px rgba(40,70,10,.6);
   margin: 0;
 }
 
