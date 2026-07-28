@@ -1003,76 +1003,129 @@ function drawLinks(sec) {
    색 테두리 = 그 색 친구만 조사할 수 있다는 뜻!
    ----------------------------------------------------------- */
 function drawObject(o, seed) {
-  const hero = (o.color === null || o.color === undefined) ? null : HEROES[o.color];
   ctx.save();
-  ctx.lineWidth   = 4;
-  ctx.strokeStyle = hero ? hero.dark : '#8a7f6a';
-  ctx.lineJoin    = 'round';
+  ctx.lineJoin = 'round';
 
-  // 이미 조사한 사물은 흐릿해져
-  ctx.globalAlpha = o.taken ? 0.4 : 1;
+  // 이미 뒤져본 가구는 살짝 흐릿해져
+  ctx.globalAlpha = o.taken ? 0.55 : 1;
 
-  if (o.shape === 'seat') {
-    // 💺 비행기 좌석을 위에서 내려다본 모습
-    drawSeat(o, seed);
-  } else {
-    sloppyFill(ctx,
-      () => wobbleRect(ctx, o.x, o.y, o.w, o.h, seed * 61 + 9, 3.5),
-      hero ? hero.color : '#efe7dc', seed * 67 + 4, 2.5);
+  // 🪑 가구를 진짜 모양대로 그려줘 (네모 칸 없이!)
+  drawFurniture(ctx, o, seed);
 
-    // 사물 그림(이모지)
-    ctx.font = '34px sans-serif';
+  ctx.globalAlpha = 1;
+
+  // --- 표시 달기 ---
+  const near = anyPlayerNear(o);
+  const cx = o.x + o.w / 2;
+
+  if (o.taken) {
+    // 이미 뒤져봤으면 작은 체크 표시
+    ctx.font = 'bold 15px sans-serif';
+    ctx.textAlign = 'center';
+    ctx.globalAlpha = 0.6;
+    ctx.lineWidth = 4;
+    ctx.lineJoin = 'round';
+    ctx.strokeStyle = '#fff';
+    ctx.strokeText('✓', cx, o.y - 6);
+    ctx.fillStyle = '#6b8f4a';
+    ctx.fillText('✓', cx, o.y - 6);
+    ctx.globalAlpha = 1;
+
+  } else if (near) {
+    // 가까이 가면 "Y버튼으로 뒤져보기" 말풍선이 통통 떠올라
+    const bob = Math.sin(game.time * 0.008) * 3;
+    const label = 'Y';
+    ctx.font = 'bold 15px sans-serif';
     ctx.textAlign = 'center';
     ctx.textBaseline = 'middle';
-    ctx.fillText(o.icon || '📦', o.x + o.w / 2, o.y + o.h / 2 + 2);
-  }
 
-  // 아직 안 조사했으면 머리 위에 '!' 가 통통 떠 있어
-  if (!o.taken) {
-    const bob = Math.sin(game.time * 0.006 + seed) * 4;
-    ctx.font = 'bold 26px sans-serif';
-    ctx.lineWidth = 5;
-    ctx.strokeStyle = '#fff';
-    ctx.strokeText('!', o.x + o.w / 2, o.y - 16 + bob);
-    ctx.fillStyle = hero ? hero.dark : '#8a7f6a';
-    ctx.fillText('!', o.x + o.w / 2, o.y - 16 + bob);
+    const by = o.y - 20 + bob;
+    ctx.fillStyle = '#fffbe8';
+    ctx.strokeStyle = '#c9a227';
+    ctx.lineWidth = 3;
+    wobbleCircle(ctx, cx, by, 14, seed * 31 + 3, 0.14);
+    ctx.fill();
+    ctx.stroke();
+
+    ctx.fillStyle = '#8a6a12';
+    ctx.fillText(label, cx, by + 1);
+    ctx.textBaseline = 'alphabetic';
   }
 
   ctx.textAlign = 'left';
-  ctx.textBaseline = 'alphabetic';
   ctx.restore();
+}
+
+
+/* 이 가구 가까이에 친구가 서 있나? */
+function anyPlayerNear(o) {
+  for (const p of game.players) {
+    if (hitBox(p, P_H, o)) return true;
+  }
+  return false;
 }
 
 
 /* -----------------------------------------------------------
    🔒 비밀번호 자물쇠 그리기
+   벽에 달린 금고처럼 생겼어. 숫자판과 손잡이가 있지!
    ----------------------------------------------------------- */
 function drawLock(L) {
   ctx.save();
   ctx.lineWidth   = 4;
-  ctx.strokeStyle = '#5a5266';
+  ctx.strokeStyle = '#4a4a56';
   ctx.lineJoin    = 'round';
 
+  // 금고 몸통
   sloppyFill(ctx,
-    () => wobbleRect(ctx, L.x, L.y, L.w, L.h, 501, 3.5),
-    '#cfc6dd', 505, 2.5);
+    () => wobbleRect(ctx, L.x, L.y, L.w, L.h, 501, 3),
+    '#9aa3b0', 505, 2);
 
-  ctx.font = '38px sans-serif';
-  ctx.textAlign = 'center';
-  ctx.textBaseline = 'middle';
-  ctx.fillText('🔒', L.x + L.w / 2, L.y + L.h / 2);
+  // 숫자판 (검은 네모 + 점 여섯 개)
+  const px = L.x + L.w * 0.18, py = L.y + L.h * 0.14;
+  const pw = L.w * 0.64,       ph = L.h * 0.42;
+  ctx.fillStyle = '#2f3440';
+  wobbleRect(ctx, px, py, pw, ph, 507, 2);
+  ctx.fill();
 
-  // 반짝반짝 안내
-  const bob = Math.sin(game.time * 0.006) * 4;
-  ctx.font = 'bold 13px sans-serif';
-  ctx.lineWidth = 5;
-  ctx.strokeStyle = '#fff';
-  ctx.strokeText('Y버튼', L.x + L.w / 2, L.y - 14 + bob);
-  ctx.fillStyle = '#5a5266';
-  ctx.fillText('Y버튼', L.x + L.w / 2, L.y - 14 + bob);
+  ctx.fillStyle = '#8fe6b4';
+  for (let i = 0; i < 6; i++) {
+    const cx = px + pw * (0.22 + (i % 3) * 0.28);
+    const cy = py + ph * (0.32 + Math.floor(i / 3) * 0.38);
+    wobbleCircle(ctx, cx, cy, 2.6, 509 + i, 0.4);
+    ctx.fill();
+  }
 
-  ctx.textAlign = 'left';
-  ctx.textBaseline = 'alphabetic';
+  // 동그란 손잡이 (금고 다이얼)
+  const hx = L.x + L.w / 2, hy = L.y + L.h * 0.76;
+  ctx.fillStyle = '#d8dde4';
+  wobbleCircle(ctx, hx, hy, L.w * 0.17, 511, 0.14);
+  ctx.fill();
+  ctx.stroke();
+  ctx.beginPath();
+  ctx.moveTo(hx, hy);
+  ctx.lineTo(hx + L.w * 0.12, hy - L.w * 0.08);
+  ctx.stroke();
+
+  // 가까이 가면 안내가 통통 떠올라
+  if (anyPlayerNear(L)) {
+    const bob = Math.sin(game.time * 0.008) * 3;
+    ctx.font = 'bold 15px sans-serif';
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    const by = L.y - 20 + bob;
+    ctx.fillStyle = '#fffbe8';
+    ctx.strokeStyle = '#c9a227';
+    ctx.lineWidth = 3;
+    wobbleCircle(ctx, L.x + L.w / 2, by, 14, 517, 0.14);
+    ctx.fill();
+    ctx.stroke();
+    ctx.fillStyle = '#8a6a12';
+    ctx.fillText('Y', L.x + L.w / 2, by + 1);
+    ctx.textBaseline = 'alphabetic';
+    ctx.textAlign = 'left';
+  }
+
   ctx.restore();
 }
 
@@ -1613,42 +1666,6 @@ function drawExitCount(exit) {
 }
 
 
-/* -----------------------------------------------------------
-   💺 비행기 좌석 그리기 (위에서 내려다본 모습)
-
-   좌석은 세 부분으로 되어 있어:
-     ① 등받이 — 위쪽에 있는 길쭉한 부분
-     ② 방석   — 앉는 자리
-     ③ 팔걸이 — 양옆에 붙은 얇은 막대기
-   ----------------------------------------------------------- */
-function drawSeat(o, seed) {
-  const x = o.x, y = o.y, w = o.w, h = o.h;
-
-  ctx.save();
-  ctx.lineWidth = 3.5;
-  ctx.lineJoin  = 'round';
-  ctx.strokeStyle = '#4a6a8a';
-
-  // ① 등받이 (위쪽 3분의 1)
-  sloppyFill(ctx,
-    () => wobbleRect(ctx, x + 4, y, w - 8, h * 0.34, seed * 91 + 1, 3),
-    '#6f9bc4', seed * 93 + 2, 2);
-
-  // ② 방석 (아래쪽)
-  sloppyFill(ctx,
-    () => wobbleRect(ctx, x + 2, y + h * 0.30, w - 4, h * 0.70, seed * 95 + 3, 3),
-    '#8fb8dc', seed * 97 + 4, 2);
-
-  // ③ 팔걸이 (양옆 얇은 막대기)
-  ctx.fillStyle = '#4a6a8a';
-  for (const side of [0, 1]) {
-    const ax = side === 0 ? x - 2 : x + w - 6;
-    wobbleRect(ctx, ax, y + h * 0.36, 8, h * 0.58, seed * 99 + side, 2);
-    ctx.fill();
-  }
-
-  ctx.restore();
-}
 
 
 /* -----------------------------------------------------------

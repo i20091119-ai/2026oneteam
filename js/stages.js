@@ -107,6 +107,16 @@ const STAGES = [
           { x: 320, y: 300, w: 110, h: 44 }             // 🪤 왼쪽 방 한가운데 가시
         ],
 
+        // 🪑 뒤져볼 수 있는 가구들 — 여기는 전부 꽝이야! (연습용)
+        objects: [
+          { x: 160, y: 100, w: 66, h: 44, shape: 'cart',  name: '서비스 카트', kind: 'empty' },
+          { x: 300, y: 110, w: 56, h: 56, shape: 'box',   name: '기내 짐칸',   kind: 'empty' },
+          { x: 380, y: 210, w: 46, h: 46, shape: 'trash', name: '쓰레기통',    kind: 'empty' },
+          { x: 250, y: 380, w: 54, h: 54, shape: 'bag',   name: '두고 간 가방', kind: 'empty' },
+          { x: 540, y: 380, w: 56, h: 56, shape: 'box',   name: '구급 상자',   kind: 'empty' },
+          { x: 760, y: 240, w: 46, h: 46, shape: 'trash', name: '휴지통',      kind: 'empty' }
+        ],
+
         exit: { x: 730, y: 350, w: 54, h: 80 },
 
         spawns: [ {x: 180, y: 420}, {x: 230, y: 420}, {x: 280, y: 420} ]
@@ -165,7 +175,13 @@ const STAGES = [
           { x: 390, y: 330, w: 62, h: 62, shape: 'seat', name: '2C 좌석', kind: 'empty' },
           { x: 490, y: 330, w: 62, h: 62, shape: 'seat', name: '2D 좌석', icon: '💺',
             kind: 'quiz', answer: 1,
-            question: '거울에 비춰도 똑같아 보이는 숫자 중에서\n가장 작은 수는? (0은 빼고)' }
+            question: '거울에 비춰도 똑같아 보이는 숫자 중에서\n가장 작은 수는? (0은 빼고)' },
+          // 좌석 말고도 뒤져볼 게 많아!
+          { x: 590, y: 120, w: 66, h: 44, shape: 'cart',  name: '서비스 카트', kind: 'empty' },
+          { x: 600, y: 380, w: 46, h: 46, shape: 'trash', name: '쓰레기통',    kind: 'empty' },
+          { x: 300, y: 236, w: 54, h: 54, shape: 'bag',   name: '여행 가방',   kind: 'empty' },
+          { x: 720, y: 120, w: 46, h: 46, shape: 'cup',   name: '남은 주스',   kind: 'empty' },
+          { x: 720, y: 400, w: 56, h: 56, shape: 'box',   name: '구명조끼함',  kind: 'empty' }
         ],
 
         doors: [
@@ -212,11 +228,15 @@ const STAGES = [
         // kind: 'number' = 숫자 단서 / 'hint' = 그림·글자 힌트
         // color 를 적지 않으면 세 친구 누구나 조사할 수 있어!
         objects: [
-          { x: 190, y: 130, w: 64, h: 64, icon: '🎛️', name: '계기판', kind: 'quiz', answer: 2,
+          { x: 180, y: 120, w: 90, h: 60, shape: 'panel', name: '계기판', kind: 'quiz', answer: 2,
             question: '세 사람이 모두 창가 자리에 앉으려고 해요.\n한 줄에 창가 자리는 2개.\n최소 몇 줄이 필요할까요?' },
-          { x: 450, y: 130, w: 64, h: 64, icon: '📜',
+          { x: 440, y: 120, w: 84, h: 58, shape: 'board',
             name: '비행일지', kind: 'hint',
             text: '네 개의 답을 작은 수부터 큰 수까지 줄 세우시오' },
+          { x: 620, y: 120, w: 52, h: 52, shape: 'chair',  name: '기장 의자',  kind: 'empty' },
+          { x: 300, y: 250, w: 46, h: 46, shape: 'trash',  name: '휴지통',     kind: 'empty' },
+          { x: 640, y: 250, w: 54, h: 54, shape: 'books',  name: '설명서 더미', kind: 'empty' },
+          { x: 300, y: 400, w: 56, h: 56, shape: 'box',    name: '공구 상자',  kind: 'empty' },
           { x: 190, y: 370, w: 64, h: 64, icon: '☕',
             name: '커피잔',   kind: 'empty' },
           { x: 450, y: 370, w: 64, h: 64, icon: '🧳',
@@ -304,10 +324,20 @@ const STAGES = [
           { x: 790, y: 330, w: 64, h: 64, color: 0 }    // 🟢 끝 칸
         ],
 
-        // 🗄️ 책상 서랍에 문제가 하나 숨어 있어
+        // 🪑 교실에 놓인 것들 — 책상마다 서랍을 뒤져봐!
+        //    딱 하나에만 문제가 들어 있어 😤
         objects: [
-          { x: 200, y: 120, w: 64, h: 64, icon: '🗄️', name: '책상 서랍', kind: 'quiz', answer: 0,
-            question: "'폐교' 라는 낱말 안에\n동그라미(ㅇ)는 모두 몇 개일까요?" }
+          { x: 110, y: 110, w: 66, h: 48, shape: 'desk', name: '첫째 줄 책상', kind: 'quiz', answer: 0,
+            question: "'폐교' 라는 낱말 안에\n동그라미(ㅇ)는 모두 몇 개일까요?" },
+          { x: 205, y: 110, w: 66, h: 48, shape: 'desk',  name: '둘째 줄 책상', kind: 'empty' },
+          { x: 110, y: 240, w: 66, h: 48, shape: 'desk',  name: '셋째 줄 책상', kind: 'empty' },
+          { x: 205, y: 240, w: 66, h: 48, shape: 'desk',  name: '넷째 줄 책상', kind: 'empty' },
+          { x: 390, y: 110, w: 66, h: 48, shape: 'desk',  name: '창가 책상',   kind: 'empty' },
+          { x: 390, y: 240, w: 66, h: 48, shape: 'desk',  name: '뒷자리 책상', kind: 'empty' },
+          { x: 700, y: 110, w: 84, h: 56, shape: 'board', name: '칠판',        kind: 'empty' },
+          { x: 690, y: 240, w: 52, h: 52, shape: 'plant', name: '시든 화분',   kind: 'empty' },
+          { x: 780, y: 240, w: 46, h: 46, shape: 'trash', name: '쓰레기통',    kind: 'empty' },
+          { x: 120, y: 380, w: 54, h: 54, shape: 'books', name: '버려진 교과서', kind: 'empty' }
         ],
 
         spikes: [
@@ -353,14 +383,19 @@ const STAGES = [
 
         // 🗄️ 사물함 6개 — 2개에만 문제가 있어!
         objects: [
-          { x: 140, y: 150, w: 58, h: 58, icon: '🗄️', name: '1번 사물함', kind: 'empty' },
-          { x: 225, y: 150, w: 58, h: 58, icon: '🗄️', name: '2번 사물함', kind: 'quiz', answer: 1,
+          { x: 140, y: 150, w: 58, h: 58, shape: 'locker', name: '1번 사물함', kind: 'empty' },
+          { x: 225, y: 150, w: 58, h: 58, shape: 'locker', name: '2번 사물함', kind: 'quiz', answer: 1,
             question: '어떤 수에 자기 자신을 곱했더니\n다시 그 수가 되었어요.\n0이 아닌 그 수는?' },
-          { x: 310, y: 150, w: 58, h: 58, icon: '🗄️', name: '3번 사물함', kind: 'empty' },
-          { x: 395, y: 150, w: 58, h: 58, icon: '🗄️', name: '4번 사물함', kind: 'empty' },
-          { x: 480, y: 150, w: 58, h: 58, icon: '🗄️', name: '5번 사물함', kind: 'quiz', answer: 9,
+          { x: 310, y: 150, w: 58, h: 58, shape: 'locker', name: '3번 사물함', kind: 'empty' },
+          { x: 395, y: 150, w: 58, h: 58, shape: 'locker', name: '4번 사물함', kind: 'empty' },
+          { x: 480, y: 150, w: 58, h: 58, shape: 'locker', name: '5번 사물함', kind: 'quiz', answer: 9,
             question: '지금은 3시입니다.\n시계의 짧은바늘이 반 바퀴 돌면\n몇 시가 될까요?' },
-          { x: 160, y: 320, w: 58, h: 58, icon: '🗄️', name: '6번 사물함', kind: 'empty' }
+          { x: 160, y: 320, w: 58, h: 58, shape: 'locker', name: '6번 사물함', kind: 'empty' },
+          // 사물함 말고도 뒤져볼 게 있어
+          { x: 250, y: 320, w: 52, h: 52, shape: 'plant', name: '복도 화분',  kind: 'empty' },
+          { x: 540, y: 320, w: 46, h: 46, shape: 'trash', name: '쓰레기통',   kind: 'empty' },
+          { x: 690, y: 150, w: 84, h: 56, shape: 'board', name: '게시판',     kind: 'empty' },
+          { x: 700, y: 330, w: 54, h: 54, shape: 'books', name: '헌 책 더미', kind: 'empty' }
         ],
 
         spikes: [
@@ -390,12 +425,18 @@ const STAGES = [
         walls: roomWalls(140, 60, 680, 420),
 
         objects: [
-          { x: 230, y: 140, w: 64, h: 64, icon: '🗃️', name: '서류함', kind: 'quiz', answer: 6,
+          { x: 220, y: 130, w: 62, h: 66, shape: 'cabinet', name: '서류함', kind: 'quiz', answer: 6,
             question: '1층에서 4층까지 계단으로 올라가요.\n한 층에 계단이 2칸씩이면\n모두 몇 칸을 올라갈까요?' },
-          { x: 470, y: 140, w: 64, h: 64, icon: '📋', name: '칠판', kind: 'hint',
+          { x: 450, y: 130, w: 84, h: 56, shape: 'board',   name: '알림판', kind: 'hint',
             text: '네 개의 답을 큰 수부터 작은 수까지 줄 세우시오' },
-          { x: 230, y: 340, w: 64, h: 64, icon: '☕', name: '식은 커피', kind: 'empty' },
-          { x: 470, y: 340, w: 64, h: 64, icon: '🪑', name: '낡은 의자', kind: 'empty' }
+          { x: 620, y: 130, w: 62, h: 66, shape: 'cabinet', name: '옆 서류함', kind: 'empty' },
+          { x: 220, y: 380, w: 66, h: 48, shape: 'desk',    name: '선생님 책상', kind: 'empty' },
+          { x: 340, y: 380, w: 52, h: 52, shape: 'chair',   name: '낡은 의자',   kind: 'empty' },
+          { x: 460, y: 380, w: 46, h: 46, shape: 'cup',     name: '식은 커피',   kind: 'empty' },
+          { x: 560, y: 380, w: 54, h: 54, shape: 'books',   name: '출석부 더미', kind: 'empty' },
+          { x: 350, y: 250, w: 52, h: 52, shape: 'plant',   name: '말라죽은 화분', kind: 'empty' },
+          { x: 240, y: 250, w: 46, h: 46, shape: 'trash',   name: '휴지통',      kind: 'empty' },
+          { x: 470, y: 250, w: 54, h: 54, shape: 'clock',   name: '멈춘 시계',   kind: 'empty' }
         ],
 
         puddles: [
