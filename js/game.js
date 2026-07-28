@@ -741,12 +741,19 @@ function drawWindows(theme, sec) {
   for (let i = 1; i <= w.count; i++) {
     const cx = top.x + gap * i;
 
+    // 창문 모양 그리기 — 동그란 창(비행기)과 네모난 창(교실) 둘 다 지원해
+    const square = w.shape === 'square';
+    const shape = () => {
+      if (square) wobbleRect(ctx, cx - R * 1.15, cy - R * 0.8, R * 2.3, R * 1.6, i * 17 + 601, 2.5);
+      else        wobbleCircle(ctx, cx, cy, R, i * 17 + 601, 0.10);
+    };
+
     ctx.save();
 
     // ① 창문 모양으로 오려내기
     //    clip 은 '이 모양 안에만 그려라' 하고 정해주는 거야.
     //    그래야 하늘이 창문 밖으로 삐져나가지 않아!
-    wobbleCircle(ctx, cx, cy, R, i * 17 + 601, 0.10);
+    shape();
     ctx.clip();
 
     // ② 창밖 하늘
@@ -765,12 +772,19 @@ function drawWindows(theme, sec) {
 
     ctx.restore();
 
-    // ④ 창틀 (동그란 테두리)
+    // ④ 창틀
     ctx.save();
     ctx.lineWidth   = 5;
     ctx.strokeStyle = theme.edge;
-    wobbleCircle(ctx, cx, cy, R, i * 17 + 601, 0.10);
+    shape();
     ctx.stroke();
+
+    // 네모 창문에는 가운데에 창살을 하나 그어줘 (교실 창문처럼!)
+    if (square) {
+      ctx.lineWidth = 3;
+      wobbleLine(ctx, cx, cy - R * 0.8, cx, cy + R * 0.8, i + 631, 2);
+      ctx.stroke();
+    }
     ctx.restore();
   }
 }
