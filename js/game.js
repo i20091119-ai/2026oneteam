@@ -637,16 +637,33 @@ function draw() {
   if (game.toastTime > 0) {
     game.toastTime--;
     ctx.globalAlpha = Math.min(1, game.toastTime / 20);   // 사라질 때 스르륵
-    // ⚠️ 글씨 크기를 먼저 정해야 글씨 길이를 제대로 잴 수 있어!
-    ctx.font = 'bold 17px sans-serif';
-    const w = ctx.measureText(game.toast).width + 44;
 
-    ctx.fillStyle = 'rgba(60,50,80,.88)';
-    roundRect(ctx, CANVAS_W / 2 - w / 2, CANVAS_H / 2 - 26, w, 46, 16);
+    // ⚠️ 글씨 크기를 먼저 정해야 글씨 길이를 제대로 잴 수 있어!
+    ctx.font = 'bold 20px sans-serif';
+
+    // 문제가 길면 줄바꿈 표시가 들어 있어. 그 자리에서 줄을 나눠줘!
+    const lines = String(game.toast).split('\n');
+
+    // 가장 긴 줄에 맞춰 상자 너비를 정해
+    let widest = 0;
+    for (const line of lines) {
+      widest = Math.max(widest, ctx.measureText(line).width);
+    }
+
+    const lineH  = 30;
+    const boxW   = Math.min(widest + 56, CANVAS_W - 60);
+    const boxH   = lines.length * lineH + 26;
+    const boxTop = CANVAS_H / 2 - boxH / 2;
+
+    ctx.fillStyle = 'rgba(52,44,68,.90)';
+    roundRect(ctx, CANVAS_W / 2 - boxW / 2, boxTop, boxW, boxH, 18);
     ctx.fill();
 
     ctx.fillStyle = '#fff';
-    ctx.fillText(game.toast, CANVAS_W / 2, CANVAS_H / 2 + 3);
+    lines.forEach((line, i) => {
+      ctx.fillText(line, CANVAS_W / 2, boxTop + 30 + i * lineH);
+    });
+
     ctx.globalAlpha = 1;
   }
 
@@ -1135,7 +1152,7 @@ function updateClueBook() {
       // 문제만 보여주고 답은 알려주지 않아! 셋이 풀어야 해 🧠
       return '<div class="clue quiz">' +
                '<span class="where">' + (c.icon || '🧠') + ' ' + c.name + '</span>' +
-               '<span class="q">' + c.question + '</span>' +
+               '<span class="q">' + c.question.replace(/\n/g, '<br>') + '</span>' +
              '</div>';
     }
     return '<div class="clue hint">' + (c.icon || '📜') + ' ' + c.text + '</div>';

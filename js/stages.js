@@ -153,16 +153,19 @@ const STAGES = [
           // 윗줄 좌석
           { x: 190, y: 124, w: 62, h: 62, shape: 'seat', name: '1A 좌석', kind: 'empty' },
           { x: 290, y: 124, w: 62, h: 62, shape: 'seat', name: '1B 좌석', icon: '💺',
-            kind: 'quiz', question: '3 + 4 = ?',  answer: 7 },
+            kind: 'quiz', answer: 8,
+            question: '0부터 9까지 숫자 중에서\n동그란 구멍이 두 개인 숫자는?' },
           { x: 390, y: 124, w: 62, h: 62, shape: 'seat', name: '1C 좌석', kind: 'empty' },
           { x: 490, y: 124, w: 62, h: 62, shape: 'seat', name: '1D 좌석', icon: '💺',
-            kind: 'quiz', question: '3 × 3 = ?',  answer: 9 },
+            kind: 'quiz', answer: 9,
+            question: '1부터 9까지 모두 더한 다음,\n그 답에 있는 두 숫자를 또 더하면?' },
           // 아랫줄 좌석
           { x: 190, y: 330, w: 62, h: 62, shape: 'seat', name: '2A 좌석', kind: 'empty' },
           { x: 290, y: 330, w: 62, h: 62, shape: 'seat', name: '2B 좌석', kind: 'empty' },
           { x: 390, y: 330, w: 62, h: 62, shape: 'seat', name: '2C 좌석', kind: 'empty' },
           { x: 490, y: 330, w: 62, h: 62, shape: 'seat', name: '2D 좌석', icon: '💺',
-            kind: 'quiz', question: '12 ÷ 4 = ?', answer: 3 }
+            kind: 'quiz', answer: 1,
+            question: '거울에 비춰도 똑같아 보이는 숫자 중에서\n가장 작은 수는? (0은 빼고)' }
         ],
 
         doors: [
@@ -209,11 +212,11 @@ const STAGES = [
         // kind: 'number' = 숫자 단서 / 'hint' = 그림·글자 힌트
         // color 를 적지 않으면 세 친구 누구나 조사할 수 있어!
         objects: [
-          { x: 190, y: 130, w: 64, h: 64, icon: '🎛️',
-            name: '계기판',  kind: 'quiz', question: '10 - 9 = ?', answer: 1 },
+          { x: 190, y: 130, w: 64, h: 64, icon: '🎛️', name: '계기판', kind: 'quiz', answer: 2,
+            question: '세 사람이 모두 창가 자리에 앉으려고 해요.\n한 줄에 창가 자리는 2개.\n최소 몇 줄이 필요할까요?' },
           { x: 450, y: 130, w: 64, h: 64, icon: '📜',
             name: '비행일지', kind: 'hint',
-            text: '작은 수부터 큰 수까지 차례로 누르시오' },
+            text: '네 개의 답을 작은 수부터 큰 수까지 줄 세우시오' },
           { x: 190, y: 370, w: 64, h: 64, icon: '☕',
             name: '커피잔',   kind: 'empty' },
           { x: 450, y: 370, w: 64, h: 64, icon: '🧳',
@@ -223,8 +226,9 @@ const STAGES = [
         // 🔒 비밀번호 자물쇠 — 누구나 조사할 수 있어
         lock: { x: 700, y: 360, w: 64, h: 80 },
 
-        // 정답 (1 < 3 < 7 < 9 이니까 작은 수부터!)
-        password: '1379',
+        // 정답 — 네 문제의 답은 8, 9, 1, 2.
+        // 작은 수부터 줄 세우면 1 < 2 < 8 < 9 이니까 → 1289
+        password: '1289',
 
         spawns: [ {x: 200, y: 280}, {x: 250, y: 300}, {x: 300, y: 320} ]
       }
