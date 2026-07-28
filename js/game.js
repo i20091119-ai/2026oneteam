@@ -1104,16 +1104,24 @@ function loop(now) {
   game.time = now;
   updateDoodleSeed(now);        // 손그림이 보글보글 꿈틀거리게
 
-  // 🔒 비밀번호 창이 열려 있으면, 캐릭터는 멈추고 키패드만 움직여
-  if (game.screen === 'game' && game.lockOpen) {
-    input.update();
-    updateLockInput();
-    input.endFrame();
+  input.update();                 // ① 조종기·키보드 신호 받기 (항상!)
+
+  // ⚙️ 설정 창이 열려 있으면 그것만 조작해 (어느 화면에서든 제일 먼저!)
+  if (overlay.classList.contains('active')) {
+    updateOverlayInput();
   }
 
-  if (game.screen === 'game' && !game.paused) {
-    input.update();              // ① 조종기 신호 받기
+  // 게임 화면이 아니면 = 시작 화면이나 끝 화면 → 메뉴를 조종기로 고를 수 있게
+  else if (game.screen !== 'game') {
+    updateMenuInput();
+  }
 
+  // 🔒 비밀번호 창이 열려 있으면, 캐릭터는 멈추고 키패드만 움직여
+  else if (game.lockOpen) {
+    updateLockInput();
+  }
+
+  else if (!game.paused) {
     const sec = currentSection();
 
     // ② 버튼과 문 상태를 먼저 확인해
@@ -1146,9 +1154,14 @@ function loop(now) {
     if (input.players[0].isPressed('pause'))    togglePause();
     if (input.players[0].isPressed('restart'))  startGame();
     if (input.players[0].isPressed('settings')) openOverlay();
-
-    input.endFrame();            // '막 눌림' 표시 지우기
   }
+
+  // 정지 중에도 조종기로 다시 시작할 수 있게
+  else if (game.paused) {
+    if (input.players[0].isPressed('pause')) togglePause();
+  }
+
+  input.endFrame();              // '막 눌림' 표시 지우기
 
   if (game.screen === 'clear') drawFireworks();
 
@@ -1663,3 +1676,116 @@ document.addEventListener('fullscreenchange', () => {
   document.getElementById('fullBtn').textContent =
     document.fullscreenElement ? '⛗' : '⛶';
 });
+
+
+/* ===========================================================
+   🕹️ 조종기로 메뉴 고르기
+   -----------------------------------------------------------
+   아케이드 기계에는 마우스가 없어!
+   그래서 시작 화면과 끝 화면도 조종기로 골라야 해.
+
+   스틱 위아래로 옮기고, X버튼이나 Y버튼으로 결정!
+   =========================================================== */
+
+// 화면마다 고를 수 있는 버튼 목록
+const MENUS = {
+  start: ['startBtn', 'settingsBtn'],
+  clear: ['nextBtn', 'againBtn', 'homeBtn']
+};
+
+let menuIndex = 0;      // 지금 고르고 있는 버튼 번호
+
+/* 지금 화면에서 고를 수 있는 버튼들을 가져와
+   (숨어 있는 버튼은 빼줘 — 예: 마지막 스테이지면 '다음 스테이지' 버튼이 없어) */
+function currentMenuButtons() {
+  const ids = MENUS[game.screen] || [];
+  return ids
+    .map(id => document.getElementById(id))
+    .filter(el => el && el.offsetParent !== null);   // 화면에 보이는 것만
+}
+
+/* 고른 버튼에 표시를 해줘 */
+function paintMenuCursor() {
+  // 먼저 모든 표시를 지우고
+  document.querySelectorAll('.menu-on').forEach(el => el.classList.remove('menu-on'));
+  const btns = currentMenuButtons();
+  if (!btns.length) return;
+
+  // 번호가 목록 밖으로 나가지 않게 다듬어
+  if (menuIndex >= btns.length) menuIndex = 0;
+  btns[menuIndex].classList.add('menu-on');
+}
+
+/* 메뉴를 조종기·키보드로 조작하기 */
+function updateMenuInput() {
+  const btns = currentMenuButtons();
+  if (!btns.length) return;
+
+  // 아직 아무것도 안 골랐으면 첫 번째를 골라줘
+  if (!document.querySelector('.menu-on')) paintMenuCursor();
+
+  for (const pad of input.players) {
+    let moved = false;
+
+    // 위/아래(또는 좌/우)로 옮기기
+    if (pad.isPressed('up')   || pad.isPressed('left'))  { menuIndex--; moved = true; }
+    if (pad.isPressed('down') || pad.isPressed('right')) { menuIndex++; moved = true; }
+
+    if (moved) {
+      // 목록의 끝에서 넘어가면 반대쪽으로 돌아와
+      menuIndex = (menuIndex + btns.length) % btns.length;
+      paintMenuCursor();
+      sound.select();
+    }
+
+    // 결정! (X=점프, Y=상호작용, A=달리기 버튼 아무거나)
+    if (pad.isPressed('jump') || pad.isPressed('interact') || pad.isPressed('run')) {
+      sound.wake();                       // 소리 공장 켜기
+      currentMenuButtons()[menuIndex].click();
+      return;
+    }
+
+    // B버튼(설정)으로도 설정 창을 열 수 있게
+    if (game.screen === 'start' && pad.isPressed('settings')) {
+      sound.wake();
+      openOverlay();
+      return;
+    }
+  }
+}
+
+/* ⚙️ 설정 창을 조종기로 닫기 */
+function updateOverlayInput() {
+  for (const pad of input.players) {
+    if (pad.isPressed('jump') || pad.isPressed('interact') ||
+        pad.isPressed('settings') || pad.isPressed('pause')) {
+      closeOverlay();
+      return;
+    }
+    // 스틱 좌우로 소리를 켜고 끌 수 있어
+    if (pad.isPressed('left') || pad.isPressed('right')) toggleSound();
+  }
+}
+
+// 화면이 바뀔 때마다 메뉴 표시를 새로 그려줘
+const _showScreen = showScreen;
+showScreen = function (name) {
+  _showScreen(name);
+  menuIndex = 0;
+  // 화면이 다 그려진 다음에 표시해야 '보이는 버튼'을 제대로 찾을 수 있어
+  setTimeout(paintMenuCursor, 0);
+};
+
+// 마우스를 올린 버튼이 곧바로 선택되게 (마우스와 조종기가 따로 놀지 않게)
+for (const ids of Object.values(MENUS)) {
+  ids.forEach((id, i) => {
+    const el = document.getElementById(id);
+    if (el) el.addEventListener('mouseenter', () => {
+      const btns = currentMenuButtons();
+      const at = btns.indexOf(el);
+      if (at >= 0) { menuIndex = at; paintMenuCursor(); }
+    });
+  });
+}
+
+paintMenuCursor();
