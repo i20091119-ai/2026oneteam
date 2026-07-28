@@ -530,6 +530,9 @@ function draw() {
       theme.block, i * 17 + 3, 2.5);
   });
 
+  // --- 🪟 벽에 뚫린 창문 그리기 (비행기 창문 같은 것!) ---
+  if (sec.type === 'room' && theme.windows) drawWindows(theme, sec);
+
   // --- 💧 물웅덩이 그리기 (바닥이니까 먼저 그려야 아래에 깔려) ---
   (sec.puddles || []).forEach((w, i) => drawPuddle(w, i));
 
@@ -651,6 +654,61 @@ function drawDeco(theme) {
   ctx.textBaseline = 'alphabetic';
   ctx.restore();
 }
+
+/* -----------------------------------------------------------
+   🪟 창문 그리기 — 비행기 창문처럼 동그란 창문!
+   창밖으로 하늘과 구름이 천천히 흘러가는 게 보여 ✈️
+   ----------------------------------------------------------- */
+function drawWindows(theme, sec) {
+  const w = theme.windows;
+  const R = 17;                                   // 창문 크기
+
+  // 창문은 '위쪽 벽' 위에만 그려야 해.
+  // roomWalls 가 만든 벽 중 첫 번째가 위쪽 벽이야!
+  const top = sec.walls[0];
+  if (!top) return;
+
+  // 벽 길이를 창문 개수만큼 똑같이 나눠
+  const gap = top.w / (w.count + 1);
+  const cy  = top.y + top.h / 2;                  // 벽 한가운데 높이
+
+  for (let i = 1; i <= w.count; i++) {
+    const cx = top.x + gap * i;
+
+    ctx.save();
+
+    // ① 창문 모양으로 오려내기
+    //    clip 은 '이 모양 안에만 그려라' 하고 정해주는 거야.
+    //    그래야 하늘이 창문 밖으로 삐져나가지 않아!
+    wobbleCircle(ctx, cx, cy, R, i * 17 + 601, 0.10);
+    ctx.clip();
+
+    // ② 창밖 하늘
+    const sky = ctx.createLinearGradient(0, cy - R, 0, cy + R);
+    sky.addColorStop(0, theme.sky[0]);
+    sky.addColorStop(1, theme.sky[1]);
+    ctx.fillStyle = sky;
+    ctx.fillRect(cx - R, cy - R, R * 2, R * 2);
+
+    // ③ 창밖으로 흘러가는 구름 (창문마다 속도가 조금씩 달라)
+    ctx.fillStyle = 'rgba(255,255,255,.85)';
+    const speed = 0.020 + (i % 3) * 0.007;
+    const cloudX = cx - R + ((game.time * speed + i * 40) % (R * 2 + 26));
+    wobbleCircle(ctx, cloudX,     cy + 3, 8, i * 5 + 611, 0.25); ctx.fill();
+    wobbleCircle(ctx, cloudX + 9, cy - 2, 10, i * 5 + 613, 0.25); ctx.fill();
+
+    ctx.restore();
+
+    // ④ 창틀 (동그란 테두리)
+    ctx.save();
+    ctx.lineWidth   = 5;
+    ctx.strokeStyle = theme.edge;
+    wobbleCircle(ctx, cx, cy, R, i * 17 + 601, 0.10);
+    ctx.stroke();
+    ctx.restore();
+  }
+}
+
 
 /* -----------------------------------------------------------
    💧 물웅덩이 그리기 — 바닥에 고인 찰랑찰랑한 물
