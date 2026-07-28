@@ -13,21 +13,21 @@
 const HEROES = [
   {
     name: '세은',
-    color: '#ff7a85',      // 빨간 진저맨
-    dark:  '#d94f5e',      // 테두리용 진한 색
-    emoji: '🔴'
-  },
-  {
-    name: '다영',
     color: '#8fd67f',      // 연두 진저맨
-    dark:  '#5aa84c',
+    dark:  '#5aa84c',      // 테두리용 진한 색
     emoji: '🟢'
   },
   {
-    name: '태준',
+    name: '다영',
     color: '#ffd45e',      // 노란 진저맨
     dark:  '#d9a71f',
     emoji: '🟡'
+  },
+  {
+    name: '태준',
+    color: '#ff7a85',      // 빨간 진저맨
+    dark:  '#d94f5e',
+    emoji: '🔴'
   }
 ];
 

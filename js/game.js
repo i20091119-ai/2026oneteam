@@ -499,12 +499,12 @@ function buildGuides() {
 
   // --- 키보드 안내 ---
   const keyRows = [
-    ['W A S D',      '🔴 세은 움직이기'],
-    ['Space / E',    '🔴 세은 점프 / 상호작용'],
-    ['↑ ↓ ← →',      '🟢 다영 움직이기'],
-    ['Enter / /',    '🟢 다영 점프 / 상호작용'],
-    ['I J K L',      '🟡 태준 움직이기'],
-    ['H / U',        '🟡 태준 점프 / 상호작용'],
+    ['W A S D',      '🟢 세은 움직이기'],
+    ['Space / E',    '🟢 세은 점프 / 상호작용'],
+    ['↑ ↓ ← →',      '🟡 다영 움직이기'],
+    ['Enter / /',    '🟡 다영 점프 / 상호작용'],
+    ['I J K L',      '🔴 태준 움직이기'],
+    ['H / U',        '🔴 태준 점프 / 상호작용'],
     ['Shift (꾹)',   '달리기'],
     ['P / Esc',      '정지'],
     ['R',            '다시하기']
@@ -602,13 +602,24 @@ function drawHeroes(now) {
 
   HEROES.forEach((hero, i) => {
     // 세 친구가 번갈아가며 폴짝폴짝 뛰게 만들어
-    const bounce = Math.abs(Math.sin(now * 0.003 + i * 0.8)) * 14;
-    drawGingerbread(heroCtx, 90 + i * 120, 130 - bounce, 74, hero, {
+    const bounce = Math.abs(Math.sin(now * 0.003 + i * 0.8)) * 16;
+    drawGingerbread(heroCtx, 80 + i * 140, 138 - bounce, 76, hero, {
       facing: 1,
       walk: now * 0.15,
       moving: true,
-      jumping: bounce > 9
+      jumping: bounce > 10
     });
+
+    // 이름표 달아주기 (그림에 있던 것처럼!)
+    heroCtx.save();
+    heroCtx.font = 'bold 15px sans-serif';
+    heroCtx.textAlign = 'center';
+    heroCtx.lineWidth = 4;
+    heroCtx.strokeStyle = '#fff';                 // 흰 테두리를 먼저 그리면
+    heroCtx.strokeText(hero.name, 80 + i * 140, 20);
+    heroCtx.fillStyle = hero.dark;                // 글자가 또렷하게 보여
+    heroCtx.fillText(hero.name, 80 + i * 140, 20);
+    heroCtx.restore();
   });
 
   requestAnimationFrame(drawHeroes);

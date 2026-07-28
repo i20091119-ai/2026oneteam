@@ -16,35 +16,42 @@
 </head>
 <body class="game-body">
 
-<!-- ==================== ① 시작 화면 ==================== -->
+<!-- ==================== ① 시작 화면 ====================
+     학생들이 그린 그림 그대로 만들었어!
+     파란 하늘 · 흰 구름 · 갈색 뾰족 언덕 · 연두 잔디 · 나무 판자 버튼
+     ==================================================== -->
 <section class="screen active" id="screen-start">
-  <div class="start-box">
 
-    <!-- 제목 -->
-    <h1 class="title">우리 함께 <span class="go">GO!</span></h1>
-    <p class="tagline">단서를 얻어 협력하여 스테이지를 깨는 게임</p>
+  <!-- 배경을 층층이 쌓아 올려 (뒤 → 앞 순서) -->
+  <div class="sky"></div>
+  <div class="cloud c1"></div>
+  <div class="cloud c2"></div>
+  <div class="cloud c3"></div>
 
-    <!-- 주인공 캐릭터 세 명 (도형으로 그려서 넣을 자리) -->
-    <canvas id="heroCanvas" width="420" height="150"></canvas>
-    <p class="hero-names">
-      <span class="n red">세은</span>
-      <span class="n green">다영</span>
-      <span class="n yellow">태준</span>
-    </p>
+  <!-- 진저맨 세 명이 하늘에 둥둥 떠 있는 자리 -->
+  <canvas id="heroCanvas" width="440" height="150"></canvas>
 
-    <!-- 이야기 -->
-    <p class="story">
-      싸우기만 하고 협력이 안 되는 친구들에게<br>
-      마법사는 <b>협력게임 세상</b>에 세 친구를 가두어 버렸다…
-    </p>
+  <div class="hills"></div>
+  <div class="grass"></div>
 
-    <div class="start-buttons">
-      <button class="btn big" id="startBtn">▶ 게임 시작</button>
-      <button class="btn ghost" id="settingsBtn">⚙️ 설정</button>
-    </div>
+  <!-- 기울어진 알록달록 제목 -->
+  <h1 class="title">
+    <span class="row">
+      <span class="t-uri">우리</span>
+      <span class="t-ham">함</span><span class="t-kke">께</span>
+    </span>
+    <span class="row">
+      <span class="t-go2">GO</span><span class="t-bang">!</span>
+    </span>
+  </h1>
 
-    <p class="made-by">만든 사람 · 원팀 김세은 강다영 황태준</p>
+  <!-- 나무 판자 버튼 두 개 -->
+  <div class="wood-buttons">
+    <button class="wood" id="startBtn">Play <span class="ico">▶</span></button>
+    <button class="wood small" id="settingsBtn">Setting <span class="ico">⚙</span></button>
   </div>
+
+  <p class="made-by">원팀 · 김세은 강다영 황태준</p>
 </section>
 
 

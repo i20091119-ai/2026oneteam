@@ -25,52 +25,188 @@
 .screen.active { display: flex; }
 
 
-/* ==================== ① 시작 화면 ==================== */
-.start-box {
-  background: rgba(255, 255, 255, .88);
-  border-radius: 32px;
-  box-shadow: var(--shadow);
-  padding: 28px 40px 24px;
-  text-align: center;
-  max-width: 620px;
-  width: min(92vw, 620px);
+/* ==================== ① 시작 화면 ====================
+   학생들이 그린 그림을 그대로 옮겼어!
+   배경을 여러 겹으로 쌓아서 만들어. (뒤 → 앞 순서)
+     하늘 → 구름 → 진저맨 → 갈색 언덕 → 연두 잔디
+   ==================================================== */
+#screen-start {
+  overflow: hidden;
+  justify-content: center;
 }
 
+/* --- 파란 하늘 --- */
+.sky {
+  position: absolute;
+  inset: 0;
+  background:
+    /* 붓으로 칠한 것 같은 결 무늬 */
+    repeating-linear-gradient(92deg,
+      rgba(255,255,255,.07) 0 3px, transparent 3px 9px),
+    linear-gradient(180deg, #2e9cd4 0%, #62c2e8 70%, #8fd9f2 100%);
+}
+
+/* --- 흰 구름 (동그라미 세 개를 겹쳐서 몽글몽글하게) --- */
+.cloud {
+  position: absolute;
+  width: 124px; height: 40px;
+  background: #fff;
+  border-radius: 999px;
+  /* 구름이 아주 천천히 흘러가는 효과 */
+  animation: drift 22s linear infinite;
+}
+/* ::before 와 ::after 는 '보이지 않는 도우미 도형'이야.
+   구름 위에 동그라미를 두 개 얹어서 몽글몽글하게 만들어줘! */
+.cloud::before, .cloud::after {
+  content: '';
+  position: absolute;
+  background: #fff;
+  border-radius: 50%;
+}
+.cloud::before { width: 62px; height: 62px; top: -30px; left: 14px; }
+.cloud::after  { width: 44px; height: 44px; top: -22px; left: 64px; }
+.c1 { top: 16%; left:  6%; }
+.c2 { top: 40%; left: 78%; transform: scale(.8); animation-duration: 30s; }
+.c3 { top: 10%; left: 60%; transform: scale(.6); animation-duration: 26s; }
+
+@keyframes drift {
+  0%   { margin-left: 0; }
+  50%  { margin-left: 26px; }
+  100% { margin-left: 0; }
+}
+
+/* --- 진저맨 세 명이 잔디밭에서 폴짝폴짝 --- */
+#heroCanvas {
+  position: absolute;
+  bottom: 5%;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 2;
+  max-width: 96vw;
+  height: auto;
+  pointer-events: none;      /* 그림이 버튼 클릭을 막지 않게 */
+}
+
+/* --- 갈색 뾰족뾰족 언덕 띠 --- */
+.hills {
+  position: absolute;
+  left: 0; right: 0; bottom: 0;
+  height: 42%;
+  /* SVG 그림을 배경으로 깔아서 뾰족뾰족한 모양을 만들어.
+     ⚠️ 뾰족한 부분(위 70px)만 SVG로 그리고,
+        그 아래는 통짜 갈색으로 채워야 뾰족한 게 보여! */
+  background:
+    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='90' height='70' viewBox='0 0 90 70'%3E%3Cpath d='M0 70 V34 L22.5 0 L45 34 L67.5 0 L90 34 V70 Z' fill='%23a9711c'/%3E%3C/svg%3E")
+      repeat-x left top / 90px 70px,
+    linear-gradient(#a9711c, #966313)
+      no-repeat left 68px / 100% calc(100% - 68px);
+}
+/* 언덕 위에 마커로 그은 것 같은 세로 결 무늬 */
+.hills::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: repeating-linear-gradient(90deg,
+    rgba(90,50,10,.16) 0 2px, transparent 2px 7px);
+}
+
+/* --- 연두 잔디 --- */
+.grass {
+  position: absolute;
+  left: 0; right: 0; bottom: 0;
+  height: 27%;
+  background:
+    repeating-linear-gradient(90deg,
+      rgba(60,120,20,.18) 0 2px, transparent 2px 7px),
+    linear-gradient(180deg, #86ce33 0%, #6fbb26 100%);
+}
+
+/* --- 기울어진 알록달록 제목 --- */
 .title {
-  font-size: clamp(30px, 6vw, 48px);   /* 화면 크기에 따라 글자도 커졌다 작아졌다 */
-  margin: 0;
-  letter-spacing: -1px;
+  position: relative;         /* 배경 위에 올라오게 */
+  z-index: 2;
+  margin: 0 0 clamp(16px, 5vh, 40px);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: .02em;
+  transform: rotate(-5deg);
+  font-size: clamp(38px, 9vw, 92px);
+  font-weight: 900;
+  line-height: .95;
+  letter-spacing: .02em;
+  /* 글자에 두꺼운 검은 테두리 (그림처럼!) */
+  -webkit-text-stroke: .09em #14121a;
+  paint-order: stroke fill;   /* 테두리를 글자 뒤에 그려서 안 뭉개지게 */
+  text-shadow: 0 6px 0 rgba(0,0,0,.18);
 }
-/* 'GO!' 글자에 무지개색 입히기 */
-.title .go {
-  background: linear-gradient(90deg, #ff7a85, #ffd45e, #8fd67f);
-  -webkit-background-clip: text;
-  background-clip: text;
-  color: transparent;
+.title .row { display: flex; }
+
+/* 글자마다 색이 달라 (그림 그대로!) */
+.t-uri  { color: #ec3a72; }   /* 우리  - 분홍 */
+.t-ham  { color: #63c6ee; }   /* 함    - 하늘 */
+.t-kke  { color: #1b2f6b; }   /* 께    - 남색 */
+.t-go2  { color: #f5c518; }   /* GO    - 노랑 */
+.t-bang { color: #7ac943; }   /* !     - 연두 */
+
+/* 글자가 하나씩 통통 튀는 효과 */
+.title span span { display: inline-block; animation: letterBop 2.6s ease-in-out infinite; }
+.t-ham  { animation-delay: .1s; }
+.t-kke  { animation-delay: .2s; }
+.t-go2  { animation-delay: .3s; }
+.t-bang { animation-delay: .4s; }
+@keyframes letterBop {
+  0%, 70%, 100% { transform: translateY(0); }
+  80%           { transform: translateY(-8px); }
 }
 
-.tagline { color: var(--ink-soft); margin: 6px 0 10px; font-size: 15px; }
-
-#heroCanvas { max-width: 100%; height: auto; }
-
-.hero-names { display: flex; justify-content: center; gap: 42px; margin: 0 0 14px; }
-.hero-names .n { font-weight: 800; font-size: 16px; }
-.hero-names .red    { color: #d94f5e; }
-.hero-names .green  { color: #5aa84c; }
-.hero-names .yellow { color: #c99a10; }
-
-.story {
-  background: #fff6fa;
-  border-radius: 18px;
-  padding: 14px;
-  font-size: 14px;
-  line-height: 1.7;
-  color: #6b6178;
-  margin: 0 0 20px;
+/* --- 나무 판자 버튼 --- */
+.wood-buttons {
+  position: relative;
+  z-index: 2;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 16px;
 }
+
+.wood {
+  border: none;
+  cursor: pointer;
+  padding: 16px 52px;
+  border-radius: 6px;
+  font-size: clamp(20px, 3.4vw, 30px);
+  font-weight: 800;
+  color: #46260a;
+  letter-spacing: .04em;
+  background:
+    /* 나뭇결 무늬 */
+    repeating-linear-gradient(88deg,
+      rgba(120,70,20,.20) 0 3px, transparent 3px 11px),
+    linear-gradient(180deg, #d59a4a 0%, #b87a2c 100%);
+  box-shadow:
+    0 7px 0 #7d4d16,                       /* 판자 두께 */
+    inset 0 0 0 3px rgba(255,255,255,.18); /* 안쪽 밝은 선 */
+  transform: rotate(-1.2deg);
+  transition: transform .12s, box-shadow .12s;
+}
+.wood.small { padding: 12px 34px; font-size: clamp(16px, 2.6vw, 22px); transform: rotate(1deg); }
+
+.wood:hover  { transform: rotate(-1.2deg) translateY(-3px); box-shadow: 0 10px 0 #7d4d16, inset 0 0 0 3px rgba(255,255,255,.18); }
+.wood:active { transform: rotate(-1.2deg) translateY(5px);  box-shadow: 0 2px 0 #7d4d16,  inset 0 0 0 3px rgba(255,255,255,.18); }
+.wood .ico { margin-left: 6px; }
 
 .start-buttons { display: flex; gap: 12px; justify-content: center; flex-wrap: wrap; }
-.made-by { font-size: 12px; color: var(--ink-soft); margin: 18px 0 0; }
+
+.made-by {
+  position: absolute;
+  bottom: 12px;
+  z-index: 2;
+  font-size: 13px;
+  font-weight: 700;
+  color: #3f6b12;
+  margin: 0;
+}
 
 
 /* ==================== 버튼 모양들 ==================== */
