@@ -405,23 +405,49 @@ function nextSection() {
 
 /* 스테이지를 다 깼을 때 */
 function clearStage() {
-  // 별 계산 — 스테이지를 깨면 ⭐1개, 시간 안에 깨면 ⭐2개
-  // (⚠️ '시간 안에'가 몇 초인지는 아직 안 정했어. 지금은 임시로 60초!)
-  const TIME_LIMIT = 60;
-  const earned = game.elapsed <= TIME_LIMIT ? 2 : 1;
+  const stage = currentStage();
+
+  // 별 계산 (기획서 6번)
+  //   스테이지를 깨면 ⭐1개, 시간 안에 깨면 ⭐2개
+  const limit  = stage.timeLimit || 60;
+  const earned = game.elapsed <= limit ? 2 : 1;
   game.stars += earned;
 
   sound.clear();
 
+  // 다음 스테이지가 남아 있나?
+  const hasNext = game.stageIndex + 1 < STAGES.length;
+
   // 끝 화면 꾸미기
+  document.getElementById('clearTitle').textContent =
+    hasNext ? stage.name + ' 클리어!' : '탈출 성공!';
   document.getElementById('clearStars').textContent = '⭐'.repeat(earned);
   document.getElementById('clearTime').textContent =
-    '걸린 시간 ' + game.elapsed.toFixed(1) + '초';
+    '걸린 시간 ' + game.elapsed.toFixed(1) + '초  ·  모은 별 ' + game.stars + '개';
   document.getElementById('clearSub').textContent =
     earned === 2 ? '시간 안에 해냈어요! 최고예요! 🏆' : '함께 힘을 모아 해냈어요!';
 
+  // 다음 스테이지가 있으면 '다음' 버튼을 보여줘
+  document.getElementById('nextBtn').style.display = hasNext ? '' : 'none';
+
   showScreen('clear');
   startFireworks();
+}
+
+/* 다음 스테이지로 넘어가기 */
+function nextStage() {
+  game.stageIndex++;
+  game.sectionIndex = 0;
+  game.startTime = performance.now();
+  game.elapsed = 0;
+
+  // 단서 수첩은 스테이지마다 새로 시작해
+  game.clues = [];
+  updateClueBook();
+
+  loadSection();
+  showScreen('game');
+  sound.select();
 }
 
 
@@ -432,15 +458,18 @@ function draw() {
   const sec = currentSection();
   const stage = currentStage();
 
+  // 이 스테이지의 색깔 꾸미기 정보
+  const theme = stage.theme;
+
   // --- 배경 하늘 ---
   const sky = ctx.createLinearGradient(0, 0, 0, CANVAS_H);
-  sky.addColorStop(0, stage.sky[0]);
-  sky.addColorStop(1, stage.sky[1]);
+  sky.addColorStop(0, theme.sky[0]);
+  sky.addColorStop(1, theme.sky[1]);
   ctx.fillStyle = sky;
   ctx.fillRect(0, 0, CANVAS_W, CANVAS_H);
 
-  // --- 배경에 떠다니는 몽글몽글 구름 ---
-  drawClouds();
+  // --- 배경에 둥둥 떠다니는 꾸미기 그림 ---
+  drawDeco(theme);
 
   // --- 출구 문 그리기 (다음 구역으로 가는 곳) ---
   if (sec.exit) drawDoor(sec.exit);
@@ -448,12 +477,12 @@ function draw() {
   // --- 발판 / 벽 그리기 (삐뚤빼뚤 손그림!) ---
   const blocks = sec.type === 'platform' ? sec.platforms : sec.walls;
   ctx.lineWidth = 3.5;
-  ctx.strokeStyle = '#8a6a4a';
+  ctx.strokeStyle = theme.edge;
   ctx.lineJoin = 'round';
   blocks.forEach((b, i) => {
     sloppyFill(ctx,
       () => wobbleRect(ctx, b.x, b.y, b.w, b.h, i * 13 + 7, 3.5),
-      '#d9c6b0', i * 17 + 3, 2.5);
+      theme.block, i * 17 + 3, 2.5);
   });
 
   // --- 🪤 가시 그리기 ---
@@ -523,21 +552,32 @@ function draw() {
   ctx.textAlign = 'left';
 }
 
-/* 대충 그린 구름 ☁️ */
-function drawClouds() {
+/* -----------------------------------------------------------
+   배경 꾸미기 그림 그리기
+   스테이지마다 다른 그림이 둥둥 떠다녀!
+     들판이면 ☁️구름, 바닷속이면 🐠물고기, 우주선이면 ⭐별…
+   ----------------------------------------------------------- */
+function drawDeco(theme) {
+  const deco = theme.deco || ['☁️'];
   ctx.save();
-  ctx.fillStyle = 'rgba(255,255,255,.62)';
-  ctx.strokeStyle = 'rgba(255,255,255,.85)';
-  ctx.lineWidth = 3;
-  for (let i = 0; i < 4; i++) {
-    // 구름이 천천히 오른쪽으로 흘러가게
-    const x = ((game.time * 0.012) + i * 260) % (CANVAS_W + 200) - 100;
-    const y = 70 + i * 34;
-    // 동그라미 세 개를 겹쳐서 대충 그린 구름을 만들어
-    wobbleCircle(ctx, x,      y,     26, i * 5 + 1, 0.22); ctx.fill();
-    wobbleCircle(ctx, x + 28, y - 8, 32, i * 5 + 2, 0.22); ctx.fill();
-    wobbleCircle(ctx, x + 60, y,     24, i * 5 + 3, 0.22); ctx.fill();
+  ctx.globalAlpha = 0.55;
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'middle';
+
+  for (let i = 0; i < 6; i++) {
+    const icon = deco[i % deco.length];
+    // 천천히 오른쪽으로 흘러가게 (스테이지마다 속도가 조금씩 달라)
+    const speed = 0.010 + (i % 3) * 0.004;
+    const x = ((game.time * speed) + i * 190) % (CANVAS_W + 160) - 80;
+    const y = 70 + (i % 4) * 62 + Math.sin(game.time * 0.001 + i) * 10;
+
+    ctx.font = (26 + (i % 3) * 10) + 'px sans-serif';
+    ctx.fillText(icon, x, y);
   }
+
+  ctx.globalAlpha = 1;
+  ctx.textAlign = 'left';
+  ctx.textBaseline = 'alphabetic';
   ctx.restore();
 }
 
@@ -1130,6 +1170,7 @@ document.getElementById('closeOverlay').addEventListener('click', closeOverlay);
 document.getElementById('pauseBtn').addEventListener('click', togglePause);
 document.getElementById('soundBtn').addEventListener('click', toggleSound);
 document.getElementById('soundToggle').addEventListener('click', toggleSound);
+document.getElementById('nextBtn').addEventListener('click', nextStage);
 document.getElementById('againBtn').addEventListener('click', startGame);
 document.getElementById('homeBtn').addEventListener('click', () => {
   sound.select();
