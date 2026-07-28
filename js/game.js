@@ -42,6 +42,9 @@ const input = new InputManager(3);
 const canvas = document.getElementById('gameCanvas');
 const ctx = canvas.getContext('2d');
 
+// ✨ 반짝이·먼지·물방울을 담는 상자
+const fx = new Particles();
+
 
 /* -----------------------------------------------------------
    ② 움직임에 쓰는 숫자들
@@ -113,8 +116,9 @@ function loadSection() {
 
   // 문과 버튼을 모두 '꺼짐' 상태로 되돌려 놔
   // (다시 하기를 눌렀을 때 문이 열린 채로 남아 있으면 안 되니까!)
-  (sec.doors   || []).forEach(d => d.open = false);
+  (sec.doors   || []).forEach(d => { d.open = false; d.anim = 0; });
   (sec.buttons || []).forEach(b => b.on   = false);
+  fx.clear();
 
   game.players = HEROES.map((hero, i) => {
     const sp = sec.spawns[i] || sec.spawns[0];
@@ -207,7 +211,7 @@ function movePlatform(p, pad, sec, solids) {
         p.y = plat.y;
         p.vy = 0;
         p.onGround = true;
-        if (wasInAir) sound.land();
+        if (wasInAir) { sound.land(); fx.dust(p.x, p.y, 7); }
       } else if (p.vy < 0) {          // 올라가는 중이었다면 → 머리를 쿵!
         p.y = plat.y + plat.h + height;
         p.vy = 0;
@@ -246,6 +250,7 @@ function checkPuddles(sec) {
       // 발밑(가운데)이 웅덩이 안에 들어갔으면 밟은 거야
       if (p.x > w.x && p.x < w.x + w.w &&
           p.y > w.y && p.y < w.y + w.h) {
+        fx.splash(p.x, p.y);            // 촥! 하고 물이 튀어
         respawn(p, sec);
         break;
       }
@@ -268,7 +273,7 @@ function moveRoom(p, pad, sec, solids) {
   if (p.z > 0 || p.vz > 0) {
     p.z += p.vz;
     p.vz -= GRAVITY_Z;
-    if (p.z <= 0) { p.z = 0; p.vz = 0; sound.land(); }
+    if (p.z <= 0) { p.z = 0; p.vz = 0; sound.land(); fx.dust(p.x, p.y, 6); }
   }
 
   // 네 방향 모두 자유롭게 움직여
@@ -331,7 +336,10 @@ function updateButtons(sec) {
   for (const b of sec.buttons) {
     // b.color 번 친구(0=세은, 1=다영, 2=태준)만 이 버튼을 누를 수 있어!
     const owner = game.players[b.color];
+    const was = b.on;
     b.on = owner ? hitBox(owner, P_H, b) : false;
+    // 방금 밟았으면 발밑에서 먼지가 폴폴
+    if (b.on && !was) fx.dust(b.x + b.w / 2, b.y + b.h, 8, HEROES[b.color].color);
   }
 }
 
@@ -344,11 +352,24 @@ function updateDoors(sec) {
       if (b.color === d.color && b.on) { open = true; break; }
     }
 
-    // 방금 열렸거나 방금 닫혔으면 소리를 내줘
+    // 방금 열렸거나 방금 닫혔으면 소리를 내고 반짝여줘
     if (open !== d.open) {
       d.open = open;
-      open ? sound.door() : sound.shut();
+      if (open) {
+        sound.door();
+        fx.sparkle(d.x + d.w / 2, d.y + d.h / 2,
+                   HEROES[d.color].color, 16, Math.max(d.w, d.h) * 0.8);
+      } else {
+        sound.shut();
+        fx.dust(d.x + d.w / 2, d.y + d.h, 8, HEROES[d.color].color);
+      }
     }
+
+    // 문이 스르륵 열리고 닫히게 하는 숫자 (0=닫힘, 1=열림)
+    // 목표 값으로 조금씩 다가가게 만들면 부드러워져!
+    const target = open ? 1 : 0;
+    if (d.anim === undefined) d.anim = target;
+    d.anim += (target - d.anim) * 0.28;
   }
 }
 
@@ -409,6 +430,7 @@ function checkInteract(sec) {
         color: obj.color
       });
       sound.clue();
+      fx.sparkle(obj.x + obj.w / 2, obj.y + obj.h / 2, '#ffd94a', 18, 40);
       updateClueBook();
       break;
     }
@@ -518,6 +540,7 @@ function draw() {
 
   // --- 출구 문 그리기 (다음 구역으로 가는 곳) ---
   if (sec.exit) drawDoor(sec.exit);
+  if (sec.exit) drawExitCount(sec.exit);
 
   // --- 발판 / 벽 그리기 (삐뚤빼뚤 손그림!) ---
   const blocks = sec.type === 'platform' ? sec.platforms : sec.walls;
@@ -538,6 +561,9 @@ function draw() {
 
   // --- 🪤 가시 그리기 ---
   (sec.spikes || []).forEach((s, i) => drawSpikes(s, i));
+
+  // --- 🔗 버튼과 문을 잇는 점선 (어떤 버튼이 어떤 문을 여는지!) ---
+  drawLinks(sec);
 
   // --- 색깔 버튼 그리기 ---
   (sec.buttons || []).forEach((b, i) => drawColorButton(b, i));
@@ -568,10 +594,16 @@ function draw() {
       z: p.z                       // 🕳️ 공중에 떠 있으면 몸이 위로 올라가
     });
 
+    // 머리 위에 이름표 — 누가 누군지 항상 알 수 있게!
+    drawNameTag(p);
+
     // 출구에 도착한 친구 머리 위엔 반짝 표시!
-    if (p.atExit) drawActiveMark(ctx, p.x, p.y, P_H, p.hero, game.time);
+    if (p.atExit) drawActiveMark(ctx, p.x, p.y - p.z, P_H, p.hero, game.time);
   }
   ctx.globalAlpha = 1;
+
+  // --- ✨ 반짝이·먼지·물방울 그리기 (캐릭터 위에 겹쳐서) ---
+  fx.draw(ctx);
 
   // --- 안내 글씨 ---
   ctx.fillStyle = 'rgba(90,80,110,.6)';
@@ -825,31 +857,95 @@ function drawColorDoor(d, seed) {
   ctx.lineWidth = 3.5;
   ctx.lineJoin  = 'round';
 
-  if (d.open) {
-    // 열린 문 — 점선 문틀만 흐릿하게 남겨
-    ctx.globalAlpha = 0.45;
-    ctx.setLineDash([8, 7]);
+  // anim: 0이면 완전히 닫힘, 1이면 완전히 열림.
+  // 그 사이 값이면 '열리는 중'이라 문이 스르륵 움직여!
+  const anim = d.anim === undefined ? (d.open ? 1 : 0) : d.anim;
+
+  // ① 문틀 — 항상 점선으로 남아 있어서 여기가 문이라는 걸 알려줘
+  ctx.globalAlpha = 0.4;
+  ctx.setLineDash([8, 7]);
+  ctx.strokeStyle = hero.dark;
+  wobbleRect(ctx, d.x, d.y, d.w, d.h, seed * 41 + 5, 3);
+  ctx.stroke();
+  ctx.setLineDash([]);
+  ctx.globalAlpha = 1;
+
+  // ② 문짝 — 셔터처럼 위로 쏙 올라가면서 열려
+  const open = 1 - anim;                 // 남아 있는 문짝의 길이 비율
+  if (open > 0.02) {
+    ctx.save();
+
+    // 문틀 안에서만 그리게 오려내기 (문짝이 밖으로 삐져나가지 않게!)
+    ctx.beginPath();
+    ctx.rect(d.x - 3, d.y - 3, d.w + 6, d.h + 6);
+    ctx.clip();
+
+    // 세로로 긴 문은 위로, 가로로 긴 문은 옆으로 밀려나
+    const vertical = d.h >= d.w;
+    const shift = vertical ? -d.h * anim : -d.w * anim;
+    ctx.translate(vertical ? 0 : shift, vertical ? shift : 0);
+
     ctx.strokeStyle = hero.dark;
-    wobbleRect(ctx, d.x, d.y, d.w, d.h, seed * 41 + 5, 3);
-    ctx.stroke();
-    ctx.setLineDash([]);
-  } else {
-    // 닫힌 문 — 꽉 막힌 색 문
-    ctx.strokeStyle = hero.dark;
+    ctx.lineWidth = 3.5;
     sloppyFill(ctx,
       () => wobbleRect(ctx, d.x, d.y, d.w, d.h, seed * 41 + 5, 3),
       hero.color, seed * 43 + 6, 2);
 
-    // 문 가운데에 빗금 무늬를 그어서 '막혔다'는 느낌을 줘
-    ctx.strokeStyle = hero.dark;
+    // 문에 빗금 무늬를 그어서 '막혔다'는 느낌을 줘
     ctx.lineWidth = 2.5;
-    ctx.globalAlpha = 0.5;
-    for (let i = 1; i < 4; i++) {
-      const yy = d.y + (d.h / 4) * i;
-      wobbleLine(ctx, d.x + 4, yy, d.x + d.w - 4, yy, seed * 7 + i, 3);
+    ctx.globalAlpha = 0.45;
+    const lines = vertical ? 4 : 3;
+    for (let i = 1; i < lines; i++) {
+      if (vertical) {
+        const yy = d.y + (d.h / lines) * i;
+        wobbleLine(ctx, d.x + 4, yy, d.x + d.w - 4, yy, seed * 7 + i, 3);
+      } else {
+        const xx = d.x + (d.w / lines) * i;
+        wobbleLine(ctx, xx, d.y + 4, xx, d.y + d.h - 4, seed * 7 + i, 3);
+      }
+      ctx.stroke();
+    }
+    ctx.restore();
+  }
+
+  ctx.restore();
+}
+
+
+/* -----------------------------------------------------------
+   🔗 버튼과 문을 잇는 반짝이는 점선
+
+   "이 버튼이 저 문을 여는구나!" 를 한눈에 알 수 있게 해줘.
+   퍼즐을 이해하는 데 가장 큰 도움이 되는 부분이야 😊
+   ----------------------------------------------------------- */
+function drawLinks(sec) {
+  if (!sec.buttons || !sec.doors) return;
+
+  ctx.save();
+  ctx.lineWidth = 3;
+  ctx.lineCap = 'round';
+
+  for (const b of sec.buttons) {
+    for (const d of sec.doors) {
+      if (d.color !== b.color) continue;
+
+      const hero = HEROES[b.color];
+      // 밟고 있으면 진하고 또렷하게, 아니면 아주 흐릿하게
+      ctx.globalAlpha = b.on ? 0.75 : 0.18;
+      ctx.strokeStyle = hero.dark;
+
+      // 점선이 문 쪽으로 또르르 흘러가는 효과
+      ctx.setLineDash([10, 10]);
+      ctx.lineDashOffset = b.on ? -(game.time * 0.06) % 20 : 0;
+
+      ctx.beginPath();
+      ctx.moveTo(b.x + b.w / 2, b.y + b.h / 2);
+      ctx.lineTo(d.x + d.w / 2, d.y + d.h / 2);
       ctx.stroke();
     }
   }
+
+  ctx.setLineDash([]);
   ctx.restore();
 }
 
@@ -981,6 +1077,7 @@ function loop(now) {
       else                         moveRoom(p, pad, sec, solids);
     }
 
+    fx.update();                 // ✨ 반짝이 조각들 움직이기
     checkSpikes(sec);            // 가시에 닿았나?
     checkPuddles(sec);           // 💧 물웅덩이를 밟았나?
     checkInteract(sec);          // Y버튼으로 사물을 조사했나?
@@ -1366,3 +1463,64 @@ window.addEventListener('resize', () => {
 buildGuides();
 requestAnimationFrame(drawHeroes);
 requestAnimationFrame(loop);
+
+
+/* -----------------------------------------------------------
+   🏷️ 캐릭터 머리 위 이름표
+   셋이 같이 노는 게임이라 누가 누군지 바로 보여야 해!
+   ----------------------------------------------------------- */
+function drawNameTag(p) {
+  const y = p.y - p.z - P_H - 14;      // 머리 위쪽 (공중에 떠 있으면 같이 올라가)
+
+  ctx.save();
+  ctx.font = 'bold 12px sans-serif';
+  ctx.textAlign = 'center';
+
+  // 흰 테두리를 먼저 굵게 그리면 어떤 배경에서도 또렷하게 보여
+  ctx.lineWidth = 4;
+  ctx.lineJoin = 'round';
+  ctx.strokeStyle = 'rgba(255,255,255,.95)';
+  ctx.strokeText(p.hero.name, p.x, y);
+
+  ctx.fillStyle = p.hero.dark;
+  ctx.fillText(p.hero.name, p.x, y);
+
+  ctx.textAlign = 'left';
+  ctx.restore();
+}
+
+
+/* -----------------------------------------------------------
+   🚪 출구에 몇 명이 모였는지 보여주기 (예: 2/3)
+   ----------------------------------------------------------- */
+function drawExitCount(exit) {
+  const here = game.players.filter(p => p.atExit).length;
+  const all  = game.players.length;
+  const done = here === all;
+
+  const cx = exit.x + exit.w / 2;
+  const cy = exit.y - 22;
+
+  ctx.save();
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'middle';
+
+  // 다 모이면 통통 튀어올라
+  const bounce = done ? Math.abs(Math.sin(game.time * 0.008)) * 5 : 0;
+
+  // 동그란 알약 배경
+  ctx.fillStyle = done ? '#7fd67f' : 'rgba(255,255,255,.92)';
+  ctx.strokeStyle = done ? '#4d7a2a' : '#8a7f6a';
+  ctx.lineWidth = 3;
+  wobbleRect(ctx, cx - 24, cy - 13 - bounce, 48, 26, 701, 2.5);
+  ctx.fill();
+  ctx.stroke();
+
+  ctx.fillStyle = done ? '#fff' : '#6b6178';
+  ctx.font = 'bold 15px sans-serif';
+  ctx.fillText(here + ' / ' + all, cx, cy - bounce + 1);
+
+  ctx.textAlign = 'left';
+  ctx.textBaseline = 'alphabetic';
+  ctx.restore();
+}
