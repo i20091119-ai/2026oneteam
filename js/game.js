@@ -25,7 +25,14 @@ const game = {
   startTime: 0,         // 시작한 순간
   elapsed: 0,           // 흘러간 시간 (초)
   paused: false,
-  time: 0               // 애니메이션용 시계
+  time: 0,              // 애니메이션용 시계
+
+  clues: [],            // 📓 지금까지 모은 단서
+  toast: '',            // 화면에 잠깐 뜨는 알림 글씨
+  toastTime: 0,
+  lockOpen: false,      // 🔒 비밀번호 창이 열려 있나?
+  typed: '',            // 누른 숫자
+  cursor: 0             // 키패드에서 고른 칸
 };
 
 // 조작 대장을 만들어 (세은, 다영, 태준 3명)
@@ -77,6 +84,16 @@ function startGame() {
   game.paused = false;
   game.startTime = performance.now();
   game.elapsed = 0;
+
+  // 단서 수첩을 비우고, 조사했던 표시도 모두 지워
+  game.clues = [];
+  updateClueBook();
+  closeLock();
+  for (const stage of STAGES) {
+    for (const sec of stage.sections) {
+      (sec.objects || []).forEach(o => o.taken = false);
+    }
+  }
 
   loadSection();
   showScreen('game');
@@ -306,6 +323,63 @@ function checkSpikes(sec) {
   }
 }
 
+/* -----------------------------------------------------------
+   🔍 사물 조사하기 (기획서 규칙 2번)
+
+   Y버튼(상호작용)을 누르면 가까이 있는 사물을 조사해.
+   ⚠️ 사물과 색이 같은 친구만 조사할 수 있어!
+      (🟢초록 책장은 세은이만, 🟡노랑 그림은 다영이만…)
+   ----------------------------------------------------------- */
+function checkInteract(sec) {
+  if (!sec.objects && !sec.lock) return;
+
+  for (let i = 0; i < game.players.length; i++) {
+    const p   = game.players[i];
+    const pad = input.players[i];
+
+    // Y버튼을 '방금 눌렀을' 때만 반응해 (꾹 누르고 있으면 한 번만)
+    if (!pad.isPressed('interact')) continue;
+
+    // --- 사물 조사 ---
+    let found = false;
+    for (const obj of (sec.objects || [])) {
+      if (!hitBox(p, P_H, obj)) continue;          // 가까이 있지 않으면 건너뛰어
+      found = true;
+
+      // obj.color 가 null 이면 누구나 조사할 수 있어.
+      // 숫자(0·1·2)가 적혀 있으면 그 색 친구만 조사할 수 있어.
+      if (obj.color !== null && obj.color !== undefined && obj.color !== i) {
+        // 색이 다른 친구가 만지면 안 돼!
+        showToast(HEROES[obj.color].emoji + ' ' + HEROES[obj.color].name +
+                  '이만 조사할 수 있어요!');
+        sound.wrong();
+        break;
+      }
+
+      if (obj.taken) { showToast('이미 조사했어요!'); break; }
+
+      // 단서 획득! 📓
+      obj.taken = true;
+      game.clues.push({
+        icon: obj.icon,
+        name: obj.name,
+        kind: obj.kind,
+        value: obj.value,
+        text: obj.text,
+        color: obj.color
+      });
+      sound.clue();
+      updateClueBook();
+      break;
+    }
+
+    // --- 🔒 자물쇠 조사 (누구나 열 수 있어) ---
+    if (!found && sec.lock && hitBox(p, P_H, sec.lock)) {
+      openLock();
+    }
+  }
+}
+
 /* --- 출구: 세 친구가 모두 모이면 다음 구역으로! --- */
 function checkExit(sec) {
   let allAtExit = true;
@@ -369,7 +443,7 @@ function draw() {
   drawClouds();
 
   // --- 출구 문 그리기 (다음 구역으로 가는 곳) ---
-  drawDoor(sec.exit);
+  if (sec.exit) drawDoor(sec.exit);
 
   // --- 발판 / 벽 그리기 (삐뚤빼뚤 손그림!) ---
   const blocks = sec.type === 'platform' ? sec.platforms : sec.walls;
@@ -390,6 +464,12 @@ function draw() {
 
   // --- 색깔 문 그리기 ---
   (sec.doors || []).forEach((d, i) => drawColorDoor(d, i));
+
+  // --- 🔍 조사할 사물 그리기 ---
+  (sec.objects || []).forEach((o, i) => drawObject(o, i));
+
+  // --- 🔒 자물쇠 그리기 ---
+  if (sec.lock) drawLock(sec.lock);
 
   // --- 세 친구 그리기 ---
   for (const p of game.players) {
@@ -416,9 +496,30 @@ function draw() {
   ctx.fillStyle = 'rgba(90,80,110,.6)';
   ctx.font = 'bold 15px sans-serif';
   ctx.textAlign = 'center';
-  ctx.fillText('같은 색 친구가 같은 색 버튼을 밟고 있어야 문이 열려요!', CANVAS_W / 2, 30);
-  ctx.font = 'bold 13px sans-serif';
-  ctx.fillText('셋이 모두 🚪출구에 모이면 다음 구역으로!', CANVAS_W / 2, 50);
+  if (sec.lock) {
+    ctx.fillText('사물을 조사해 단서를 모으고, 🔒자물쇠에 비밀번호를 넣으세요!', CANVAS_W / 2, 30);
+    ctx.font = 'bold 13px sans-serif';
+    ctx.fillText('사물 가까이에서 Y버튼(상호작용)을 누르세요', CANVAS_W / 2, 50);
+  } else {
+    ctx.fillText('같은 색 친구가 같은 색 버튼을 밟고 있어야 문이 열려요!', CANVAS_W / 2, 30);
+    ctx.font = 'bold 13px sans-serif';
+    ctx.fillText('셋이 모두 🚪출구에 모이면 다음 구역으로!', CANVAS_W / 2, 50);
+  }
+
+  // --- 💬 잠깐 뜨는 알림 글씨 ---
+  if (game.toastTime > 0) {
+    game.toastTime--;
+    ctx.globalAlpha = Math.min(1, game.toastTime / 20);   // 사라질 때 스르륵
+    ctx.fillStyle = 'rgba(60,50,80,.88)';
+    const w = ctx.measureText(game.toast).width + 44;
+    roundRect(ctx, CANVAS_W / 2 - w / 2, CANVAS_H / 2 - 26, w, 46, 16);
+    ctx.fill();
+    ctx.fillStyle = '#fff';
+    ctx.font = 'bold 17px sans-serif';
+    ctx.fillText(game.toast, CANVAS_W / 2, CANVAS_H / 2 + 3);
+    ctx.globalAlpha = 1;
+  }
+
   ctx.textAlign = 'left';
 }
 
@@ -538,6 +639,80 @@ function drawColorDoor(d, seed) {
 }
 
 
+/* -----------------------------------------------------------
+   🔍 조사할 사물 그리기
+   색 테두리 = 그 색 친구만 조사할 수 있다는 뜻!
+   ----------------------------------------------------------- */
+function drawObject(o, seed) {
+  const hero = (o.color === null || o.color === undefined) ? null : HEROES[o.color];
+  ctx.save();
+  ctx.lineWidth   = 4;
+  ctx.strokeStyle = hero ? hero.dark : '#8a7f6a';
+  ctx.lineJoin    = 'round';
+
+  // 이미 조사한 사물은 흐릿해져
+  ctx.globalAlpha = o.taken ? 0.4 : 1;
+
+  sloppyFill(ctx,
+    () => wobbleRect(ctx, o.x, o.y, o.w, o.h, seed * 61 + 9, 3.5),
+    hero ? hero.color : '#efe7dc', seed * 67 + 4, 2.5);
+
+  // 사물 그림(이모지)
+  ctx.font = '34px sans-serif';
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'middle';
+  ctx.fillText(o.icon, o.x + o.w / 2, o.y + o.h / 2 + 2);
+
+  // 아직 안 조사했으면 머리 위에 '!' 가 통통 떠 있어
+  if (!o.taken) {
+    const bob = Math.sin(game.time * 0.006 + seed) * 4;
+    ctx.font = 'bold 26px sans-serif';
+    ctx.lineWidth = 5;
+    ctx.strokeStyle = '#fff';
+    ctx.strokeText('!', o.x + o.w / 2, o.y - 16 + bob);
+    ctx.fillStyle = hero ? hero.dark : '#8a7f6a';
+    ctx.fillText('!', o.x + o.w / 2, o.y - 16 + bob);
+  }
+
+  ctx.textAlign = 'left';
+  ctx.textBaseline = 'alphabetic';
+  ctx.restore();
+}
+
+
+/* -----------------------------------------------------------
+   🔒 비밀번호 자물쇠 그리기
+   ----------------------------------------------------------- */
+function drawLock(L) {
+  ctx.save();
+  ctx.lineWidth   = 4;
+  ctx.strokeStyle = '#5a5266';
+  ctx.lineJoin    = 'round';
+
+  sloppyFill(ctx,
+    () => wobbleRect(ctx, L.x, L.y, L.w, L.h, 501, 3.5),
+    '#cfc6dd', 505, 2.5);
+
+  ctx.font = '38px sans-serif';
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'middle';
+  ctx.fillText('🔒', L.x + L.w / 2, L.y + L.h / 2);
+
+  // 반짝반짝 안내
+  const bob = Math.sin(game.time * 0.006) * 4;
+  ctx.font = 'bold 13px sans-serif';
+  ctx.lineWidth = 5;
+  ctx.strokeStyle = '#fff';
+  ctx.strokeText('Y버튼', L.x + L.w / 2, L.y - 14 + bob);
+  ctx.fillStyle = '#5a5266';
+  ctx.fillText('Y버튼', L.x + L.w / 2, L.y - 14 + bob);
+
+  ctx.textAlign = 'left';
+  ctx.textBaseline = 'alphabetic';
+  ctx.restore();
+}
+
+
 /* 대충 그린 문 🚪 */
 function drawDoor(d) {
   ctx.save();
@@ -565,6 +740,13 @@ function loop(now) {
   game.time = now;
   updateDoodleSeed(now);        // 손그림이 보글보글 꿈틀거리게
 
+  // 🔒 비밀번호 창이 열려 있으면, 캐릭터는 멈추고 키패드만 움직여
+  if (game.screen === 'game' && game.lockOpen) {
+    input.update();
+    updateLockInput();
+    input.endFrame();
+  }
+
   if (game.screen === 'game' && !game.paused) {
     input.update();              // ① 조종기 신호 받기
 
@@ -585,7 +767,8 @@ function loop(now) {
     }
 
     checkSpikes(sec);            // 가시에 닿았나?
-    checkExit(sec);              // 셋이 출구에 모였나?
+    checkInteract(sec);          // Y버튼으로 사물을 조사했나?
+    if (sec.exit) checkExit(sec);// 셋이 출구에 모였나?
     draw();                      // ④ 그림 그리기
 
     // 시간 재기
@@ -605,6 +788,139 @@ function loop(now) {
 
   requestAnimationFrame(loop);   // 다음 장면에도 나를 또 불러줘!
 }
+
+
+/* -----------------------------------------------------------
+   📓 단서 수첩 — 모은 단서를 화면 아래에 보여줘
+   ----------------------------------------------------------- */
+function updateClueBook() {
+  const box = document.getElementById('clueBook');
+  box.innerHTML = game.clues.map(c => {
+    if (c.kind === 'number') {
+      return '<div class="clue">' + c.icon + ' ' + c.name +
+             ' <span class="num">' + c.value + '</span></div>';
+    }
+    return '<div class="clue hint">' + c.icon + ' ' + c.text + '</div>';
+  }).join('');
+}
+
+/* -----------------------------------------------------------
+   💬 화면 가운데에 잠깐 떴다 사라지는 알림 글씨
+   ----------------------------------------------------------- */
+function showToast(text) {
+  game.toast = text;
+  game.toastTime = 90;      // 약 1.5초 동안 보여줘
+}
+
+
+/* -----------------------------------------------------------
+   🔒 비밀번호 자물쇠 (기획서 규칙 4번)
+   ----------------------------------------------------------- */
+const lockOverlay = document.getElementById('lockOverlay');
+
+// 키패드에 들어갈 것들 (3칸씩 4줄)
+const KEYPAD = ['1','2','3', '4','5','6', '7','8','9', '←','0','✓'];
+
+function openLock() {
+  if (game.lockOpen) return;
+  game.lockOpen = true;
+  game.typed = '';           // 지금까지 누른 숫자
+  game.cursor = 0;           // 스틱으로 고른 칸 번호
+  game.paused = true;
+  lockOverlay.classList.add('active');
+  buildKeypad();
+  drawPassword();
+  sound.select();
+}
+
+function closeLock() {
+  game.lockOpen = false;
+  game.paused = false;
+  lockOverlay.classList.remove('active');
+}
+
+/* 키패드 버튼 12개를 만들어 넣어줘 */
+function buildKeypad() {
+  const pad = document.getElementById('keypad');
+  pad.innerHTML = KEYPAD.map((k, i) =>
+    '<button class="key' + (k.length > 1 || k === '←' || k === '✓' ? ' wide' : '') +
+    '" data-i="' + i + '">' + k + '</button>'
+  ).join('');
+
+  // 마우스로 눌러도 되게 해줘
+  pad.querySelectorAll('.key').forEach(btn => {
+    btn.addEventListener('click', () => pressKey(Number(btn.dataset.i)));
+  });
+  drawCursor();
+}
+
+/* 스틱으로 고른 칸에 노란 테두리 표시 */
+function drawCursor() {
+  document.querySelectorAll('#keypad .key').forEach((b, i) => {
+    b.classList.toggle('cursor', i === game.cursor);
+  });
+}
+
+/* 누른 숫자를 네모 칸에 보여줘 */
+function drawPassword() {
+  const d = document.getElementById('pwDisplay');
+  let html = '';
+  for (let i = 0; i < 4; i++) {
+    const ch = game.typed[i];
+    html += '<div class="pw-slot' + (ch ? ' filled' : '') + '">' + (ch || '') + '</div>';
+  }
+  d.innerHTML = html;
+}
+
+/* 키패드 칸 하나를 눌렀을 때 */
+function pressKey(i) {
+  const k = KEYPAD[i];
+
+  if (k === '←') {                       // 지우기
+    game.typed = game.typed.slice(0, -1);
+    sound.select();
+  } else if (k === '✓') {                // 확인!
+    submitPassword();
+    return;
+  } else if (game.typed.length < 4) {    // 숫자 넣기
+    game.typed += k;
+    sound.beep(500 + Number(k) * 40, 0.07, 'square', 0.12);
+  }
+  drawPassword();
+}
+
+/* 비밀번호가 맞는지 확인 */
+function submitPassword() {
+  const sec = currentSection();
+
+  if (game.typed === sec.password) {
+    closeLock();
+    clearStage();                        // 탈출 성공! 🎉
+  } else {
+    // 틀리면 창이 부르르 떨려
+    const box = document.querySelector('.lock-box');
+    box.classList.add('shake');
+    setTimeout(() => box.classList.remove('shake'), 420);
+    game.typed = '';
+    drawPassword();
+    sound.wrong();
+  }
+}
+
+/* 자물쇠 창에서 조종기·키보드로 움직이기 */
+function updateLockInput() {
+  for (const pad of input.players) {
+    // 세 명 중 누가 움직여도 커서가 움직여 (같이 의논하며 누르라고!)
+    if (pad.isPressed('left'))  { game.cursor = (game.cursor + 11) % 12; drawCursor(); sound.select(); }
+    if (pad.isPressed('right')) { game.cursor = (game.cursor + 1)  % 12; drawCursor(); sound.select(); }
+    if (pad.isPressed('up'))    { game.cursor = (game.cursor + 9)  % 12; drawCursor(); sound.select(); }
+    if (pad.isPressed('down'))  { game.cursor = (game.cursor + 3)  % 12; drawCursor(); sound.select(); }
+    if (pad.isPressed('interact') || pad.isPressed('jump')) pressKey(game.cursor);
+    if (pad.isPressed('pause')) closeLock();
+  }
+}
+
+document.getElementById('lockClose').addEventListener('click', closeLock);
 
 
 /* -----------------------------------------------------------

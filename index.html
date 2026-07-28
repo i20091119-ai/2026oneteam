@@ -83,12 +83,36 @@
     <canvas id="gameCanvas" width="960" height="540"></canvas>
   </div>
 
-  <!-- 아래쪽 — 누가 어떤 조종기를 쓰는지 + 버튼 안내 -->
+  <!-- 아래쪽 — 단서 수첩 + 누가 어떤 조종기를 쓰는지 + 버튼 안내 -->
   <footer class="playbar">
-    <div class="players" id="playerBar"><!-- 자바스크립트가 채워줘 --></div>
-    <button class="btn tiny" id="helpBtn">🎮 버튼 보기</button>
+    <!-- 📓 단서 수첩 — 지금까지 모은 단서가 여기에 쌓여 -->
+    <div class="clue-book" id="clueBook"></div>
+
+    <div class="playbar-row">
+      <div class="players" id="playerBar"><!-- 자바스크립트가 채워줘 --></div>
+      <button class="btn tiny" id="helpBtn">🎮 버튼 보기</button>
+    </div>
   </footer>
 </section>
+
+
+<!-- ==================== 🔒 비밀번호 입력 창 ==================== -->
+<div class="overlay" id="lockOverlay">
+  <div class="overlay-box lock-box">
+    <h2>🔒 비밀번호 4자리</h2>
+
+    <!-- 지금까지 누른 숫자가 보이는 곳 -->
+    <div class="pw-display" id="pwDisplay"></div>
+
+    <!-- 숫자 키패드 (자바스크립트가 채워줘) -->
+    <div class="keypad" id="keypad"></div>
+
+    <p class="lock-hint">
+      스틱·방향키로 옮기고 <b>Y버튼</b>으로 누르기 · 마우스로 눌러도 돼요
+    </p>
+    <button class="btn small" id="lockClose">닫기</button>
+  </div>
+</div>
 
 
 <!-- ==================== ③ 끝(축하) 화면 ==================== -->
