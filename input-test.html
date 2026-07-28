@@ -1,0 +1,300 @@
+<!DOCTYPE html>
+<!-- ===========================================================
+     조종기 점검기 🕹️
+     아케이드 조종기를 꽂고 스틱과 버튼을 눌러보면
+     컴퓨터가 그걸 '무엇으로' 알아들었는지 보여주는 도구야.
+     =========================================================== -->
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>🕹️ 조종기 점검기</title>
+  <link rel="stylesheet" href="css/style.css">
+  <style>
+    /* 이 페이지에서만 쓰는 옷 입히기 */
+    body { align-items: flex-start; }
+    .card { max-width: 860px; text-align: left; }
+    h1 { text-align: center; }
+    .sub { text-align: center; }
+
+    /* 두 칸으로 나란히 놓기 (키보드 / 게임패드) */
+    .panels {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 16px;
+    }
+    /* 화면이 좁으면 한 줄씩 세로로 쌓기 */
+    @media (max-width: 700px) {
+      .panels { grid-template-columns: 1fr; }
+    }
+
+    .panel {
+      background: #faf8ff;
+      border: 3px solid #efe9ff;
+      border-radius: 20px;
+      padding: 18px;
+    }
+    .panel h2 { margin: 0 0 4px; font-size: 18px; }
+    .panel .tip { margin: 0 0 12px; font-size: 13px; color: var(--ink-soft); }
+
+    /* 방금 누른 것을 크게 보여주는 자리 */
+    .now {
+      background: #fff;
+      border-radius: 16px;
+      padding: 16px;
+      text-align: center;
+      min-height: 84px;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      box-shadow: inset 0 0 0 2px #f0ecfa;
+    }
+    .now .code { font-size: 26px; font-weight: 800; word-break: break-all; }
+    .now .label { font-size: 12px; color: var(--ink-soft); }
+
+    /* 지금까지 누른 것을 모아두는 목록 */
+    .list {
+      margin-top: 12px;
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      min-height: 40px;
+    }
+    .chip {
+      background: var(--mint);
+      color: #2f6b55;
+      border-radius: 999px;
+      padding: 6px 14px;
+      font-size: 14px;
+      font-weight: 700;
+      /* 새로 생길 때 뿅! 하고 커지는 효과 */
+      animation: pop .25s ease-out;
+    }
+    .chip.key { background: var(--lemon); color: #7a5c1e; }
+    @keyframes pop {
+      from { transform: scale(.4); opacity: 0; }
+      to   { transform: scale(1);  opacity: 1; }
+    }
+
+    /* 스틱이 어느 쪽으로 기울었는지 보여주는 십자 그림 */
+    .stick {
+      display: grid;
+      grid-template-columns: repeat(3, 44px);
+      grid-template-rows: repeat(3, 44px);
+      gap: 6px;
+      justify-content: center;
+      margin-top: 12px;
+    }
+    .stick div {
+      background: #fff;
+      border-radius: 12px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 20px;
+      box-shadow: inset 0 0 0 2px #f0ecfa;
+      transition: background .1s, transform .1s;
+    }
+    /* .on 이 붙으면 색이 켜져 (눌렸다는 뜻) */
+    .stick div.on { background: var(--pink); transform: scale(1.1); }
+
+    .status {
+      text-align: center;
+      margin-top: 18px;
+      font-size: 14px;
+      color: var(--ink-soft);
+    }
+    .row { text-align: center; margin-top: 18px; display: flex; gap: 10px; justify-content: center; flex-wrap: wrap; }
+    .btn.small { padding: 10px 20px; font-size: 15px; background: var(--pink); box-shadow: 0 6px 0 #f195b1; }
+    .btn.small:hover  { box-shadow: 0 8px 0 #f195b1; }
+    .btn.small:active { box-shadow: 0 2px 0 #f195b1; }
+  </style>
+</head>
+<body>
+  <main class="card">
+    <h1>🕹️ 조종기 점검기</h1>
+    <p class="sub">조종기를 꽂고 <b>스틱을 움직이거나 버튼을 눌러</b>보세요!</p>
+
+    <div class="panels">
+
+      <!-- ① 키보드로 인식되는 경우 -->
+      <section class="panel">
+        <h2>⌨️ 키보드로 인식됨</h2>
+        <p class="tip">조종기가 키보드인 척할 때 여기에 나와요.</p>
+        <div class="now">
+          <div class="code" id="keyNow">–</div>
+          <div class="label">방금 누른 키 이름</div>
+        </div>
+        <!-- 스틱 방향 십자 그림 (가운데 칸은 비워둠) -->
+        <div class="stick">
+          <div></div><div id="kUp">⬆️</div><div></div>
+          <div id="kLeft">⬅️</div><div>🕹️</div><div id="kRight">➡️</div>
+          <div></div><div id="kDown">⬇️</div><div></div>
+        </div>
+        <div class="list" id="keyList"></div>
+      </section>
+
+      <!-- ② 게임패드로 인식되는 경우 -->
+      <section class="panel">
+        <h2>🎮 게임패드로 인식됨</h2>
+        <p class="tip">조종기가 게임패드일 때 여기에 나와요.</p>
+        <div class="now">
+          <div class="code" id="padNow">–</div>
+          <div class="label">방금 누른 버튼 번호</div>
+        </div>
+        <div class="stick">
+          <div></div><div id="gUp">⬆️</div><div></div>
+          <div id="gLeft">⬅️</div><div>🕹️</div><div id="gRight">➡️</div>
+          <div></div><div id="gDown">⬇️</div><div></div>
+        </div>
+        <div class="list" id="padList"></div>
+      </section>
+
+    </div>
+
+    <p class="status" id="status">게임패드를 찾는 중… (안 잡히면 버튼을 한 번 눌러보세요)</p>
+
+    <div class="row">
+      <button class="btn small" id="resetBtn">🧹 지우고 다시 하기</button>
+      <a class="btn small" href="index.html">🏠 처음으로</a>
+    </div>
+  </main>
+
+  <script>
+  /* ===========================================================
+     여기부터는 '움직이게 하는 마법' 자바스크립트야.
+     =========================================================== */
+
+  // 화면에서 글자를 바꿀 자리들을 미리 찾아둬 (매번 찾으면 느리거든)
+  const keyNow   = document.getElementById('keyNow');
+  const padNow   = document.getElementById('padNow');
+  const keyList  = document.getElementById('keyList');
+  const padList  = document.getElementById('padList');
+  const statusEl = document.getElementById('status');
+
+  // 지금까지 눌러본 것들을 기억해두는 '주머니'
+  // Set 은 같은 것을 두 번 넣어도 하나만 남는 특별한 주머니야.
+  const seenKeys = new Set();
+  const seenPads = new Set();
+
+  /* ---------- ① 키보드 입력 확인하기 ---------- */
+
+  // 키보드 화살표 키 이름과, 화면 십자 그림을 짝지어 놓은 표
+  const KEY_ARROWS = {
+    ArrowUp: 'kUp', ArrowDown: 'kDown', ArrowLeft: 'kLeft', ArrowRight: 'kRight'
+  };
+
+  // 키를 '누를 때' 실행되는 약속
+  window.addEventListener('keydown', (e) => {
+    e.preventDefault();               // 화면이 스크롤되는 걸 막아줘
+
+    keyNow.textContent = e.code;      // e.code 는 키의 '진짜 이름' (예: KeyA, Digit1)
+
+    // 아직 안 눌러본 키라면 목록에 알약 모양으로 추가해
+    if (!seenKeys.has(e.code)) {
+      seenKeys.add(e.code);
+      const chip = document.createElement('span');
+      chip.className = 'chip key';
+      chip.textContent = e.code;
+      keyList.appendChild(chip);
+    }
+
+    // 화살표 키면 십자 그림에 불을 켜
+    const box = KEY_ARROWS[e.code];
+    if (box) document.getElementById(box).classList.add('on');
+  });
+
+  // 키에서 '손을 뗄 때' 실행되는 약속 → 십자 그림 불을 꺼
+  window.addEventListener('keyup', (e) => {
+    const box = KEY_ARROWS[e.code];
+    if (box) document.getElementById(box).classList.remove('on');
+  });
+
+  /* ---------- ② 게임패드 입력 확인하기 ---------- */
+
+  // 게임패드는 '눌렀어요!' 하고 알려주지 않아.
+  // 그래서 우리가 계속 "지금 눌렸니?" 하고 물어봐야 해. 이걸 폴링이라고 불러.
+
+  let padConnected = false;
+
+  // 게임패드가 연결되면 알려주는 약속
+  window.addEventListener('gamepadconnected', (e) => {
+    padConnected = true;
+    statusEl.textContent = '✅ 게임패드 연결됨: ' + e.gamepad.id;
+  });
+
+  window.addEventListener('gamepaddisconnected', () => {
+    padConnected = false;
+    statusEl.textContent = '❌ 게임패드 연결이 끊어졌어요.';
+  });
+
+  function checkGamepad() {
+    // 연결된 게임패드 목록을 가져와
+    const pads = navigator.getGamepads ? navigator.getGamepads() : [];
+
+    for (const pad of pads) {
+      if (!pad) continue;            // 빈 자리는 건너뛰어
+
+      if (!padConnected) {
+        padConnected = true;
+        statusEl.textContent = '✅ 게임패드 연결됨: ' + pad.id;
+      }
+
+      // --- 버튼들 확인 ---
+      // pad.buttons 는 버튼이 줄줄이 들어있는 목록이야. 0번, 1번, 2번… 이렇게 번호가 있어.
+      pad.buttons.forEach((btn, i) => {
+        if (btn.pressed) {
+          padNow.textContent = i + '번 버튼';
+          if (!seenPads.has(i)) {
+            seenPads.add(i);
+            const chip = document.createElement('span');
+            chip.className = 'chip';
+            chip.textContent = i + '번';
+            padList.appendChild(chip);
+          }
+        }
+      });
+
+      // --- 스틱 확인 ---
+      // pad.axes[0] 은 좌우, pad.axes[1] 은 위아래 기울기야.
+      // -1 은 왼쪽/위, +1 은 오른쪽/아래, 0 은 가운데를 뜻해.
+      // 0.5 는 '이만큼 기울어야 진짜 움직인 걸로 쳐줄게' 하는 기준선이야.
+      const x = pad.axes[0] || 0;
+      const y = pad.axes[1] || 0;
+      setOn('gLeft',  x < -0.5);
+      setOn('gRight', x >  0.5);
+      setOn('gUp',    y < -0.5);
+      setOn('gDown',  y >  0.5);
+
+      // 십자패드(D-pad)가 12~15번 버튼으로 오는 조종기도 있어서 같이 확인해
+      if (pad.buttons[12] && pad.buttons[12].pressed) setOn('gUp', true);
+      if (pad.buttons[13] && pad.buttons[13].pressed) setOn('gDown', true);
+      if (pad.buttons[14] && pad.buttons[14].pressed) setOn('gLeft', true);
+      if (pad.buttons[15] && pad.buttons[15].pressed) setOn('gRight', true);
+    }
+
+    // requestAnimationFrame 은 "다음 화면 그릴 때 나를 또 불러줘" 라는 뜻이야.
+    // 1초에 약 60번 반복돼서 아주 부드러워.
+    requestAnimationFrame(checkGamepad);
+  }
+
+  // 십자 그림에 불을 켜거나 끄는 작은 도우미 함수
+  function setOn(id, isOn) {
+    document.getElementById(id).classList.toggle('on', isOn);
+  }
+
+  // 확인 시작!
+  requestAnimationFrame(checkGamepad);
+
+  /* ---------- ③ 지우기 버튼 ---------- */
+  document.getElementById('resetBtn').addEventListener('click', () => {
+    seenKeys.clear();
+    seenPads.clear();
+    keyList.innerHTML = '';
+    padList.innerHTML = '';
+    keyNow.textContent = '–';
+    padNow.textContent = '–';
+  });
+  </script>
+</body>
+</html>

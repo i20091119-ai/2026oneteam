@@ -1,0 +1,88 @@
+/* ===========================================================
+   게임 전체에서 함께 쓰는 '옷 입히기' 파일이야 (CSS)
+   파스텔 색과 둥근 모서리로 귀엽게 꾸몄어.
+   =========================================================== */
+
+/* :root 는 '색깔 이름표'를 붙여두는 곳이야.
+   여기서 색을 한 번 바꾸면 게임 전체 색이 같이 바뀌어! */
+:root {
+  --bg-1: #ffeaf2;        /* 배경 위쪽 - 연한 분홍 */
+  --bg-2: #e6f0ff;        /* 배경 아래쪽 - 연한 하늘 */
+  --ink: #4a4458;         /* 글자색 - 진한 보라회색 */
+  --ink-soft: #8b839c;    /* 흐린 글자색 */
+  --card: #ffffff;        /* 카드 배경 - 흰색 */
+  --pink: #ffb3c9;        /* 포인트 분홍 */
+  --mint: #a8e6cf;        /* 포인트 민트 */
+  --lemon: #ffe3a3;       /* 포인트 레몬 */
+  --lilac: #cdb4f6;       /* 포인트 라일락 */
+  --radius: 24px;         /* 모서리 둥근 정도 */
+  --shadow: 0 10px 30px rgba(120, 100, 160, .18); /* 부드러운 그림자 */
+}
+
+/* 모든 요소가 크기를 계산할 때 테두리까지 포함하게 해줘 (레이아웃이 안 틀어짐) */
+* { box-sizing: border-box; }
+
+body {
+  margin: 0;
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+  font-family: "Pretendard", "Apple SD Gothic Neo", "Malgun Gothic", sans-serif;
+  color: var(--ink);
+  /* 위에서 아래로 색이 스르륵 바뀌는 배경 */
+  background: linear-gradient(160deg, var(--bg-1), var(--bg-2));
+}
+
+/* 가운데 놓이는 하얀 카드 */
+.card {
+  background: var(--card);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow);
+  padding: 40px 32px;
+  text-align: center;
+  max-width: 520px;
+  width: 100%;
+}
+
+/* 큰 이모지가 둥실둥실 떠다니는 효과 */
+.big-emoji {
+  font-size: 72px;
+  animation: float 2.4s ease-in-out infinite;
+}
+
+/* @keyframes 는 '움직임 설명서'야. 위로 갔다 아래로 갔다 반복해. */
+@keyframes float {
+  0%, 100% { transform: translateY(0); }
+  50%      { transform: translateY(-12px); }
+}
+
+h1 { font-size: 26px; margin: 12px 0 6px; }
+.sub { color: var(--ink-soft); margin: 0 0 24px; }
+.hint { color: var(--ink-soft); font-size: 13px; margin-top: 20px; }
+
+/* 알록달록 버튼 */
+.btn {
+  display: inline-block;
+  padding: 14px 28px;
+  border: none;
+  border-radius: 999px;              /* 아주 크게 주면 알약 모양이 돼 */
+  background: var(--lilac);
+  color: #fff;
+  font-size: 17px;
+  font-weight: 700;
+  text-decoration: none;
+  cursor: pointer;
+  box-shadow: 0 6px 0 #b399e8;       /* 아래쪽 그림자로 '눌리는 버튼' 느낌 */
+  transition: transform .12s, box-shadow .12s;
+}
+
+/* 마우스를 올리면 살짝 뜨고, 누르면 쑥 들어가 */
+.btn:hover  { transform: translateY(-2px); box-shadow: 0 8px 0 #b399e8; }
+.btn:active { transform: translateY(4px);  box-shadow: 0 2px 0 #b399e8; }
+
+/* 움직임을 불편해하는 사람을 위해, 시스템 설정이 켜져 있으면 애니메이션을 멈춰줘 */
+@media (prefers-reduced-motion: reduce) {
+  * { animation: none !important; transition: none !important; }
+}
