@@ -58,6 +58,10 @@ const P_W = 30;            // 캐릭터 너비
 const P_H = 48;            // 캐릭터 키
 const P_H_CROUCH = 32;     // 웅크렸을 때 키
 
+// 🕳️ 방(위에서 보기)에서 구덩이를 뛰어넘을 때 쓰는 숫자
+const JUMP_Z    = 9.6;     // 뛰어오르는 힘
+const GRAVITY_Z = 0.52;    // 다시 내려오게 하는 힘
+
 
 /* -----------------------------------------------------------
    ③ 화면 바꾸기
@@ -123,7 +127,8 @@ function loadSection() {
       walk: 0,              // 걷는 동작 숫자
       crouch: false,
       atExit: false,        // 출구에 도착했나?
-      hurt: 0               // 방금 가시에 닿았으면 잠깐 깜빡여
+      hurt: 0,              // 방금 다쳤으면 잠깐 깜빡여
+      z: 0, vz: 0           // 🕳️ 바닥에서 떠 있는 높이 (구덩이 뛰어넘기용)
     };
   });
 
@@ -223,13 +228,48 @@ function respawn(p, sec) {
   const i = game.players.indexOf(p);
   const sp = sec.spawns[i] || sec.spawns[0];
   p.x = sp.x; p.y = sp.y; p.vx = 0; p.vy = 0;
+  p.z = 0; p.vz = 0;
   p.hurt = 30;              // 잠깐 깜빡이게 표시
   sound.wrong();
 }
 
-/* --- 위에서 내려다보는 방에서 움직이기 (중력 없음!) --- */
+/* -----------------------------------------------------------
+   💧 물웅덩이를 밟았나 확인하기
+   공중에 떠 있으면(z > 0) 안 빠져! 뛰어넘는 중이니까 😄
+   ----------------------------------------------------------- */
+function checkPuddles(sec) {
+  if (!sec.puddles) return;
+  for (const p of game.players) {
+    if (p.z > 0) continue;                 // 공중에 떠 있으면 통과
+    if (p.hurt > 0) { p.hurt--; continue; }
+    for (const w of sec.puddles) {
+      // 발밑(가운데)이 웅덩이 안에 들어갔으면 밟은 거야
+      if (p.x > w.x && p.x < w.x + w.w &&
+          p.y > w.y && p.y < w.y + w.h) {
+        respawn(p, sec);
+        break;
+      }
+    }
+  }
+}
+
+/* --- 위에서 내려다보는 방에서 움직이기 --- */
 function moveRoom(p, pad, sec, solids) {
   const speed = pad.isHeld('run') ? RUN_SPEED * 0.8 : WALK_SPEED * 0.9;
+
+  /* 🕳️ 구덩이 뛰어넘기!
+     위에서 내려다보는 방에서는 '위아래'가 없으니까
+     대신 z 라는 '바닥에서 떠 있는 높이'를 따로 계산해.
+     z 가 0보다 크면 공중에 떠 있는 거야 → 구덩이 위를 지나갈 수 있어! */
+  if (pad.isPressed('jump') && p.z === 0) {
+    p.vz = JUMP_Z;
+    sound.jump();
+  }
+  if (p.z > 0 || p.vz > 0) {
+    p.z += p.vz;
+    p.vz -= GRAVITY_Z;
+    if (p.z <= 0) { p.z = 0; p.vz = 0; sound.land(); }
+  }
 
   // 네 방향 모두 자유롭게 움직여
   p.vx = 0; p.vy = 0;
@@ -461,15 +501,20 @@ function draw() {
   // 이 스테이지의 색깔 꾸미기 정보
   const theme = stage.theme;
 
-  // --- 배경 하늘 ---
-  const sky = ctx.createLinearGradient(0, 0, 0, CANVAS_H);
-  sky.addColorStop(0, theme.sky[0]);
-  sky.addColorStop(1, theme.sky[1]);
-  ctx.fillStyle = sky;
-  ctx.fillRect(0, 0, CANVAS_W, CANVAS_H);
-
-  // --- 배경에 둥둥 떠다니는 꾸미기 그림 ---
-  drawDeco(theme);
+  // --- 배경 ---
+  // 방(위에서 보기)이면 바닥을, 점프맵(옆에서 보기)이면 하늘을 그려!
+  if (sec.type === 'room') {
+    ctx.fillStyle = theme.floor || '#f3ece1';
+    ctx.fillRect(0, 0, CANVAS_W, CANVAS_H);
+    drawFloorTiles(theme);          // 바닥에 무늬 깔기
+  } else {
+    const sky = ctx.createLinearGradient(0, 0, 0, CANVAS_H);
+    sky.addColorStop(0, theme.sky[0]);
+    sky.addColorStop(1, theme.sky[1]);
+    ctx.fillStyle = sky;
+    ctx.fillRect(0, 0, CANVAS_W, CANVAS_H);
+    drawDeco(theme);                // 하늘에 구름 등 둥둥 띄우기
+  }
 
   // --- 출구 문 그리기 (다음 구역으로 가는 곳) ---
   if (sec.exit) drawDoor(sec.exit);
@@ -484,6 +529,9 @@ function draw() {
       () => wobbleRect(ctx, b.x, b.y, b.w, b.h, i * 13 + 7, 3.5),
       theme.block, i * 17 + 3, 2.5);
   });
+
+  // --- 💧 물웅덩이 그리기 (바닥이니까 먼저 그려야 아래에 깔려) ---
+  (sec.puddles || []).forEach((w, i) => drawPuddle(w, i));
 
   // --- 🪤 가시 그리기 ---
   (sec.spikes || []).forEach((s, i) => drawSpikes(s, i));
@@ -512,8 +560,9 @@ function draw() {
       facing: p.facing,
       walk: p.walk,
       moving: isMoving,
-      jumping: sec.type === 'platform' && !p.onGround,
-      crouch: p.crouch
+      jumping: (sec.type === 'platform' && !p.onGround) || p.z > 0,
+      crouch: p.crouch,
+      z: p.z                       // 🕳️ 공중에 떠 있으면 몸이 위로 올라가
     });
 
     // 출구에 도착한 친구 머리 위엔 반짝 표시!
@@ -553,6 +602,28 @@ function draw() {
 }
 
 /* -----------------------------------------------------------
+   방 바닥에 무늬 깔기 (위에서 내려다볼 때)
+   반듯한 타일이 아니라 삐뚤빼뚤한 손그림 격자야!
+   ----------------------------------------------------------- */
+function drawFloorTiles(theme) {
+  ctx.save();
+  ctx.strokeStyle = theme.tile || 'rgba(160,140,115,.22)';
+  ctx.lineWidth = 2;
+
+  const SIZE = 60;                        // 타일 한 칸 크기
+  for (let x = 0; x <= CANVAS_W; x += SIZE) {
+    wobbleLine(ctx, x, 0, x, CANVAS_H, x, 4);
+    ctx.stroke();
+  }
+  for (let y = 0; y <= CANVAS_H; y += SIZE) {
+    wobbleLine(ctx, 0, y, CANVAS_W, y, y + 500, 4);
+    ctx.stroke();
+  }
+  ctx.restore();
+}
+
+
+/* -----------------------------------------------------------
    배경 꾸미기 그림 그리기
    스테이지마다 다른 그림이 둥둥 떠다녀!
      들판이면 ☁️구름, 바닷속이면 🐠물고기, 우주선이면 ⭐별…
@@ -582,6 +653,40 @@ function drawDeco(theme) {
 }
 
 /* -----------------------------------------------------------
+   💧 물웅덩이 그리기 — 바닥에 고인 찰랑찰랑한 물
+   ----------------------------------------------------------- */
+function drawPuddle(w, seed) {
+  const cx = w.x + w.w / 2;
+  const cy = w.y + w.h / 2;
+
+  ctx.save();
+  ctx.lineWidth   = 3.5;
+  ctx.strokeStyle = '#4a9fc4';
+  ctx.lineJoin    = 'round';
+
+  // 웅덩이는 동그란 모양이라 wobbleCircle 을 눌러서 타원처럼 만들어
+  // scale 로 가로세로를 다르게 늘리면 납작한 동그라미가 돼!
+  ctx.translate(cx, cy);
+  ctx.scale(1, w.h / w.w);
+
+  // 물 (파란 얼룩)
+  sloppyFill(ctx,
+    () => wobbleCircle(ctx, 0, 0, w.w / 2, seed * 71 + 3, 0.18),
+    '#8fd4ee', seed * 73 + 5, 3);
+
+  // 물 위에 반짝이는 하얀 무늬
+  ctx.globalAlpha = 0.55;
+  ctx.fillStyle = '#ffffff';
+  wobbleCircle(ctx, -w.w * 0.14, -w.w * 0.10, w.w * 0.13, seed * 77 + 2, 0.35);
+  ctx.fill();
+  wobbleCircle(ctx,  w.w * 0.16,  w.w * 0.08, w.w * 0.08, seed * 83 + 4, 0.35);
+  ctx.fill();
+
+  ctx.restore();
+}
+
+
+/* -----------------------------------------------------------
    🪤 가시 그리기 — 삐뚤빼뚤한 삼각형을 줄줄이
    ----------------------------------------------------------- */
 function drawSpikes(s, seed) {
@@ -608,6 +713,18 @@ function drawSpikes(s, seed) {
 }
 
 
+/* 색을 연하게 만들어주는 도우미.
+   흰색을 섞은 것처럼 보이게 해서 '아직 안 눌림'을 표시해. */
+function lighten(hex) {
+  const r = parseInt(hex.slice(1, 3), 16);
+  const g = parseInt(hex.slice(3, 5), 16);
+  const b = parseInt(hex.slice(5, 7), 16);
+  // 흰색(255)에 65% 가까이 섞어
+  const mix = (c) => Math.round(c + (255 - c) * 0.65);
+  return 'rgb(' + mix(r) + ',' + mix(g) + ',' + mix(b) + ')';
+}
+
+
 /* -----------------------------------------------------------
    색깔 버튼 그리기 🔘
    같은 색 친구가 밟으면 쑥 들어가면서 반짝여!
@@ -624,7 +741,7 @@ function drawColorButton(b, seed) {
 
   sloppyFill(ctx,
     () => wobbleRect(ctx, b.x, b.y + press, b.w, b.h - press * 0.5, seed * 31 + 1, 3),
-    b.on ? hero.color : '#efe7dc', seed * 37 + 2, 2);
+    b.on ? hero.color : lighten(hero.color), seed * 37 + 2, 2);
 
   // 눌려 있으면 위로 반짝반짝 올라가는 표시
   if (b.on) {
@@ -807,6 +924,7 @@ function loop(now) {
     }
 
     checkSpikes(sec);            // 가시에 닿았나?
+    checkPuddles(sec);           // 💧 물웅덩이를 밟았나?
     checkInteract(sec);          // Y버튼으로 사물을 조사했나?
     if (sec.exit) checkExit(sec);// 셋이 출구에 모였나?
     draw();                      // ④ 그림 그리기

@@ -48,6 +48,7 @@ function drawGingerbread(ctx, x, y, size, hero, opt = {}) {
   const moving  = opt.moving  ?? false;
   const jumping = opt.jumping ?? false;
   const crouch  = opt.crouch  ?? false;
+  const z       = opt.z       ?? 0;    // 바닥에서 얼마나 떠 있나 (구덩이 뛰어넘기용)
 
   const S = hero.seed;                 // 이 친구만의 삐뚤빼뚤 번호
 
@@ -65,6 +66,20 @@ function drawGingerbread(ctx, x, y, size, hero, opt = {}) {
   // 걸을 때 팔다리가 흔들리는 정도
   const swing = moving ? Math.sin(walk * 0.25) : 0;
 
+  // ---------- 그림자 (대충 그린 얼룩) ----------
+  // 그림자는 '바닥'에 그려야 해!
+  // 공중에 높이 떠 있을수록 그림자는 작아지고 흐려져.
+  ctx.save();
+  const high = Math.min(1, z / 60);
+  ctx.globalAlpha = 0.16 * (1 - high * 0.6);
+  ctx.fillStyle = '#000';
+  wobbleCircle(ctx, 0, 1, bodyW * 0.55 * (1 - high * 0.35), S + 90, 0.30);
+  ctx.fill();
+  ctx.restore();
+
+  // 이제 몸을 공중으로 띄워 (구덩이를 뛰어넘는 중이면 위로 올라가!)
+  ctx.translate(0, -z);
+
   // 몸 전체가 살짝 기울어져 있어 (하찮음의 핵심! 😂)
   ctx.rotate(wob(S) * 0.10);
 
@@ -77,14 +92,6 @@ function drawGingerbread(ctx, x, y, size, hero, opt = {}) {
   ctx.strokeStyle = hero.dark;
   ctx.lineCap     = 'round';
   ctx.lineJoin    = 'round';
-
-  // ---------- 그림자 (대충 그린 얼룩) ----------
-  ctx.save();
-  ctx.globalAlpha = 0.14;
-  ctx.fillStyle = '#000';
-  wobbleCircle(ctx, 0, 1, bodyW * 0.55, S + 90, 0.30);
-  ctx.fill();
-  ctx.restore();
 
   // ---------- 다리 2개 (길이가 서로 달라!) ----------
   for (let i = 0; i < 2; i++) {
