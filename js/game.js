@@ -632,12 +632,15 @@ function draw() {
   if (game.toastTime > 0) {
     game.toastTime--;
     ctx.globalAlpha = Math.min(1, game.toastTime / 20);   // 사라질 때 스르륵
-    ctx.fillStyle = 'rgba(60,50,80,.88)';
+    // ⚠️ 글씨 크기를 먼저 정해야 글씨 길이를 제대로 잴 수 있어!
+    ctx.font = 'bold 17px sans-serif';
     const w = ctx.measureText(game.toast).width + 44;
+
+    ctx.fillStyle = 'rgba(60,50,80,.88)';
     roundRect(ctx, CANVAS_W / 2 - w / 2, CANVAS_H / 2 - 26, w, 46, 16);
     ctx.fill();
+
     ctx.fillStyle = '#fff';
-    ctx.font = 'bold 17px sans-serif';
     ctx.fillText(game.toast, CANVAS_W / 2, CANVAS_H / 2 + 3);
     ctx.globalAlpha = 1;
   }
@@ -1576,3 +1579,30 @@ function drawSeat(o, seed) {
 
   ctx.restore();
 }
+
+
+/* -----------------------------------------------------------
+   ⛶ 전체 화면 (아케이드 기계용)
+
+   아두이노 우노Q에 모니터를 연결해서 할 때
+   브라우저 주소창 같은 게 안 보이면 훨씬 게임기 같아!
+   ----------------------------------------------------------- */
+function toggleFullscreen() {
+  sound.select();
+  if (!document.fullscreenElement) {
+    // 화면 전체를 게임으로 채워줘
+    document.documentElement.requestFullscreen?.().catch(() => {
+      showToast('전체 화면을 쓸 수 없어요');
+    });
+  } else {
+    document.exitFullscreen?.();
+  }
+}
+
+document.getElementById('fullBtn').addEventListener('click', toggleFullscreen);
+
+// 전체 화면이 되면 버튼 모양도 바꿔줘
+document.addEventListener('fullscreenchange', () => {
+  document.getElementById('fullBtn').textContent =
+    document.fullscreenElement ? '⛗' : '⛶';
+});

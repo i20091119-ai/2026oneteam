@@ -295,13 +295,21 @@
   padding: 10px;
   min-height: 0;             /* 이게 있어야 캔버스가 넘치지 않아 */
 }
+/* 도화지가 화면 크기에 맞춰 커졌다 작아졌다 해.
+   object-fit: contain 은 '비율을 지키면서 안쪽에 딱 맞게' 라는 뜻이야.
+   그래서 큰 아케이드 모니터에서도 꽉 차게 커져! */
 #gameCanvas {
+  /* aspect-ratio 는 '가로:세로 비율을 항상 16대 9로 지켜라' 라는 뜻이야.
+     그래서 높이를 화면에 꽉 채우면 가로도 알아서 딱 맞게 늘어나!
+     큰 아케이드 모니터에서도 여백 없이 꽉 차게 커져. */
+  height: 100%;
+  width: auto;
+  aspect-ratio: 16 / 9;
   max-width: 100%;
   max-height: 100%;
   border-radius: 22px;
   box-shadow: var(--shadow);
   background: #fff;
-  image-rendering: auto;
 }
 
 /* --- 아래쪽 플레이어 막대 --- */
@@ -542,4 +550,39 @@
   .hud { padding: 8px 10px; }
   .stars, .timer { padding: 6px 12px; font-size: 15px; }
   .stage-name { font-size: 14px; }
+}
+
+
+/* ==================== 화면이 스르륵 바뀌는 효과 ==================== */
+/* 화면이 갑자기 툭 바뀌면 눈이 놀라니까 부드럽게 나타나게 해줘 */
+.screen.active {
+  animation: screenIn .32s ease-out;
+}
+@keyframes screenIn {
+  from { opacity: 0; transform: scale(.985); }
+  to   { opacity: 1; transform: scale(1); }
+}
+
+
+/* ==================== 키보드로 조작할 때 ==================== */
+/* 탭 키로 버튼을 옮겨 다닐 때 지금 어디에 있는지 보이게 해줘.
+   (마우스로 누를 때는 안 나와서 지저분해지지 않아!) */
+.btn:focus-visible,
+.wood:focus-visible,
+.icon-btn:focus-visible,
+.key:focus-visible {
+  outline: 4px solid #7a5cd6;
+  outline-offset: 3px;
+}
+
+
+/* ==================== 움직임을 줄이고 싶을 때 ==================== */
+/* 컴퓨터 설정에서 '움직임 줄이기'를 켠 사람에겐 애니메이션을 멈춰줘 */
+@media (prefers-reduced-motion: reduce) {
+  .screen.active,
+  .cloud,
+  .title span span,
+  .clue,
+  .overlay-box { animation: none !important; }
+  .btn, .wood, .icon-btn { transition: none !important; }
 }
