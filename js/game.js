@@ -434,10 +434,15 @@ function checkInteract(sec) {
         icon: obj.icon,
         name: obj.name,
         kind: obj.kind,
-        value: obj.value,
-        text: obj.text,
+        question: obj.question,   // 🧠 풀어야 할 문제
+        text: obj.text,           // 📜 그냥 읽는 힌트
         color: obj.color
       });
+
+      // 찾은 순간 문제를 크게 한 번 보여줘
+      if (obj.kind === 'quiz') showToast('🧠 ' + obj.question);
+      else if (obj.kind === 'hint') showToast('📜 ' + obj.text);
+
       sound.clue();
       fx.sparkle(obj.x + obj.w / 2, obj.y + obj.h / 2, '#ffd94a', 18, 40);
       updateClueBook();
@@ -1126,11 +1131,14 @@ function loop(now) {
 function updateClueBook() {
   const box = document.getElementById('clueBook');
   box.innerHTML = game.clues.map(c => {
-    if (c.kind === 'number') {
-      return '<div class="clue">' + c.icon + ' ' + c.name +
-             ' <span class="num">' + c.value + '</span></div>';
+    if (c.kind === 'quiz') {
+      // 문제만 보여주고 답은 알려주지 않아! 셋이 풀어야 해 🧠
+      return '<div class="clue quiz">' +
+               '<span class="where">' + (c.icon || '🧠') + ' ' + c.name + '</span>' +
+               '<span class="q">' + c.question + '</span>' +
+             '</div>';
     }
-    return '<div class="clue hint">' + c.icon + ' ' + c.text + '</div>';
+    return '<div class="clue hint">' + (c.icon || '📜') + ' ' + c.text + '</div>';
   }).join('');
 }
 

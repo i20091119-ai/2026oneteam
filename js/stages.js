@@ -17,6 +17,11 @@
       "색이 같은 친구가 그 색 버튼을 밟고 있는 동안에만 문이 열린다"
       발을 떼면 바로 쾅 닫혀 😱
 
+   🧠 단서 쪽지
+      좌석 밑이나 사물에서 나오는 쪽지에는 '문제'가 적혀 있어.
+      숫자가 바로 나오지 않으니까 셋이 머리를 맞대고 풀어야 해!
+      푼 답 네 개를 힌트대로 늘어놓으면 비밀번호가 돼.
+
    💧 물웅덩이
       바닥에 고인 작은 물웅덩이야. X버튼으로 폴짝 뛰어넘어!
       밟으면 미끄러져서 방 처음부터 다시 시작.
@@ -138,19 +143,26 @@ const STAGES = [
           { x: 400, y: 240, w: 82, h: 48 }
         ],
 
-        // 💺 비행기 좌석 — 밑을 뒤져보면 단서가 나올지도?
-        //    kind: 'number' = 숫자 단서 / 'empty' = 꽝!
+        // 💺 비행기 좌석 — 밑을 뒤져보면 쪽지가 나올지도?
+        //    kind: 'quiz'  = 문제가 적힌 쪽지 (풀어야 숫자를 알 수 있어!)
+        //    kind: 'empty' = 꽝!
+        //
+        //    ⚠️ 아래 문제는 예시야. 학생들이 만든 문제로 바꾸려면
+        //       question(문제)과 answer(답)만 고치면 돼!
         objects: [
           // 윗줄 좌석
           { x: 190, y: 124, w: 62, h: 62, shape: 'seat', name: '1A 좌석', kind: 'empty' },
-          { x: 290, y: 124, w: 62, h: 62, shape: 'seat', name: '1B 좌석', kind: 'number', value: 7, icon: '💺' },
+          { x: 290, y: 124, w: 62, h: 62, shape: 'seat', name: '1B 좌석', icon: '💺',
+            kind: 'quiz', question: '3 + 4 = ?',  answer: 7 },
           { x: 390, y: 124, w: 62, h: 62, shape: 'seat', name: '1C 좌석', kind: 'empty' },
-          { x: 490, y: 124, w: 62, h: 62, shape: 'seat', name: '1D 좌석', kind: 'number', value: 9, icon: '💺' },
+          { x: 490, y: 124, w: 62, h: 62, shape: 'seat', name: '1D 좌석', icon: '💺',
+            kind: 'quiz', question: '3 × 3 = ?',  answer: 9 },
           // 아랫줄 좌석
           { x: 190, y: 330, w: 62, h: 62, shape: 'seat', name: '2A 좌석', kind: 'empty' },
           { x: 290, y: 330, w: 62, h: 62, shape: 'seat', name: '2B 좌석', kind: 'empty' },
           { x: 390, y: 330, w: 62, h: 62, shape: 'seat', name: '2C 좌석', kind: 'empty' },
-          { x: 490, y: 330, w: 62, h: 62, shape: 'seat', name: '2D 좌석', kind: 'number', value: 3, icon: '💺' }
+          { x: 490, y: 330, w: 62, h: 62, shape: 'seat', name: '2D 좌석', icon: '💺',
+            kind: 'quiz', question: '12 ÷ 4 = ?', answer: 3 }
         ],
 
         doors: [
@@ -198,7 +210,7 @@ const STAGES = [
         // color 를 적지 않으면 세 친구 누구나 조사할 수 있어!
         objects: [
           { x: 190, y: 130, w: 64, h: 64, icon: '🎛️',
-            name: '계기판',  kind: 'number', value: 1 },
+            name: '계기판',  kind: 'quiz', question: '10 - 9 = ?', answer: 1 },
           { x: 450, y: 130, w: 64, h: 64, icon: '📜',
             name: '비행일지', kind: 'hint',
             text: '작은 수부터 큰 수까지 차례로 누르시오' },
