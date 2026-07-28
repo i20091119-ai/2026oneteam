@@ -317,18 +317,16 @@ function draw() {
   // --- 문 그리기 (다음 구역으로 가는 곳) ---
   drawDoor(sec.exit);
 
-  // --- 발판 / 벽 그리기 ---
+  // --- 발판 / 벽 그리기 (삐뚤빼뚤 손그림!) ---
   const blocks = sec.type === 'platform' ? sec.platforms : sec.walls;
-  for (const b of blocks) {
-    // 몸통
-    ctx.fillStyle = '#d9c6b0';
-    roundRect(ctx, b.x, b.y, b.w, b.h, 8);
-    ctx.fill();
-    // 윗면에 살짝 밝은 줄 (입체감!)
-    ctx.fillStyle = '#efe0cf';
-    roundRect(ctx, b.x, b.y, b.w, Math.min(8, b.h), 8);
-    ctx.fill();
-  }
+  ctx.lineWidth = 3.5;
+  ctx.strokeStyle = '#8a6a4a';
+  ctx.lineJoin = 'round';
+  blocks.forEach((b, i) => {
+    sloppyFill(ctx,
+      () => wobbleRect(ctx, b.x, b.y, b.w, b.h, i * 13 + 7, 3.5),
+      '#d9c6b0', i * 17 + 3, 2.5);
+  });
 
   // --- 세 친구 그리기 ---
   for (const p of game.players) {
@@ -355,38 +353,41 @@ function draw() {
   ctx.textAlign = 'left';
 }
 
-/* 몽글몽글 구름 그리기 */
+/* 대충 그린 구름 ☁️ */
 function drawClouds() {
   ctx.save();
-  ctx.fillStyle = 'rgba(255,255,255,.55)';
+  ctx.fillStyle = 'rgba(255,255,255,.62)';
+  ctx.strokeStyle = 'rgba(255,255,255,.85)';
+  ctx.lineWidth = 3;
   for (let i = 0; i < 4; i++) {
     // 구름이 천천히 오른쪽으로 흘러가게
     const x = ((game.time * 0.012) + i * 260) % (CANVAS_W + 200) - 100;
     const y = 70 + i * 34;
-    ctx.beginPath();
-    ctx.arc(x,      y,      26, 0, Math.PI * 2);
-    ctx.arc(x + 28, y - 8,  32, 0, Math.PI * 2);
-    ctx.arc(x + 60, y,      24, 0, Math.PI * 2);
-    ctx.fill();
+    // 동그라미 세 개를 겹쳐서 대충 그린 구름을 만들어
+    wobbleCircle(ctx, x,      y,     26, i * 5 + 1, 0.22); ctx.fill();
+    wobbleCircle(ctx, x + 28, y - 8, 32, i * 5 + 2, 0.22); ctx.fill();
+    wobbleCircle(ctx, x + 60, y,     24, i * 5 + 3, 0.22); ctx.fill();
   }
   ctx.restore();
 }
 
-/* 문 그리기 🚪 */
+/* 대충 그린 문 🚪 */
 function drawDoor(d) {
-  // 문틀
-  ctx.fillStyle = '#b89a7a';
-  roundRect(ctx, d.x - 5, d.y - 5, d.w + 10, d.h + 5, 10);
-  ctx.fill();
+  ctx.save();
+  ctx.lineWidth = 3.5;
+  ctx.strokeStyle = '#7a5a3a';
+  ctx.lineJoin = 'round';
+
   // 문짝
-  ctx.fillStyle = '#e8c9a0';
-  roundRect(ctx, d.x, d.y, d.w, d.h, 8);
+  sloppyFill(ctx,
+    () => wobbleRect(ctx, d.x, d.y, d.w, d.h, 301, 3),
+    '#e8c9a0', 305, 2.5);
+
+  // 손잡이 (삐뚤빼뚤 동그라미)
+  ctx.fillStyle = '#7a5a3a';
+  wobbleCircle(ctx, d.x + d.w - 12, d.y + d.h / 2, 4.5, 311, 0.4);
   ctx.fill();
-  // 손잡이
-  ctx.fillStyle = '#8a6f52';
-  ctx.beginPath();
-  ctx.arc(d.x + d.w - 12, d.y + d.h / 2, 4, 0, Math.PI * 2);
-  ctx.fill();
+  ctx.restore();
 }
 
 
@@ -395,6 +396,7 @@ function drawDoor(d) {
    ----------------------------------------------------------- */
 function loop(now) {
   game.time = now;
+  updateDoodleSeed(now);        // 손그림이 보글보글 꿈틀거리게
 
   if (game.screen === 'game' && !game.paused) {
     input.update();              // ① 조종기 신호 받기
@@ -598,6 +600,7 @@ const heroCanvas = document.getElementById('heroCanvas');
 const heroCtx = heroCanvas.getContext('2d');
 
 function drawHeroes(now) {
+  updateDoodleSeed(now);
   heroCtx.clearRect(0, 0, heroCanvas.width, heroCanvas.height);
 
   HEROES.forEach((hero, i) => {
