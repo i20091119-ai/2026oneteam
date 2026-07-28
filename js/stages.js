@@ -150,16 +150,17 @@ const STAGES = [
 
         // 조사할 수 있는 사물들
         // kind: 'number' = 숫자 단서 / 'hint' = 그림·글자 힌트
+        // color 를 적지 않으면 세 친구 누구나 조사할 수 있어!
         objects: [
-          { x: 190, y: 130, w: 64, h: 64, color: 0, icon: '📚',
+          { x: 190, y: 130, w: 64, h: 64, icon: '📚',
             name: '책장',   kind: 'number', value: 7 },
-          { x: 450, y: 130, w: 64, h: 64, color: 1, icon: '🖼️',
+          { x: 450, y: 130, w: 64, h: 64, icon: '🖼️',
             name: '그림',   kind: 'number', value: 3 },
-          { x: 700, y: 130, w: 64, h: 64, color: 2, icon: '📦',
+          { x: 700, y: 130, w: 64, h: 64, icon: '📦',
             name: '상자',   kind: 'number', value: 9 },
-          { x: 190, y: 330, w: 64, h: 64, color: 0, icon: '🕰️',
+          { x: 190, y: 330, w: 64, h: 64, icon: '🕰️',
             name: '시계',   kind: 'number', value: 1 },
-          { x: 450, y: 330, w: 64, h: 64, color: 1, icon: '📜',
+          { x: 450, y: 330, w: 64, h: 64, icon: '📜',
             name: '쪽지',   kind: 'hint',
             text: '작은 수부터 큰 수까지 차례로 누르시오' }
         ],
