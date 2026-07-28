@@ -417,10 +417,19 @@ function checkInteract(sec) {
         break;
       }
 
-      if (obj.taken) { showToast('이미 조사했어요!'); break; }
+      if (obj.taken) { showToast('이미 찾아봤어요!'); break; }
+
+      obj.taken = true;
+
+      // 아무것도 없는 곳이면 아쉬운 소리만 내고 끝 😅
+      if (obj.kind === 'empty') {
+        showToast(obj.name + ' 밑엔 아무것도 없네…');
+        sound.beep(220, 0.12, 'triangle', 0.10);
+        fx.dust(obj.x + obj.w / 2, obj.y + obj.h, 6);
+        break;
+      }
 
       // 단서 획득! 📓
-      obj.taken = true;
       game.clues.push({
         icon: obj.icon,
         name: obj.name,
@@ -964,15 +973,20 @@ function drawObject(o, seed) {
   // 이미 조사한 사물은 흐릿해져
   ctx.globalAlpha = o.taken ? 0.4 : 1;
 
-  sloppyFill(ctx,
-    () => wobbleRect(ctx, o.x, o.y, o.w, o.h, seed * 61 + 9, 3.5),
-    hero ? hero.color : '#efe7dc', seed * 67 + 4, 2.5);
+  if (o.shape === 'seat') {
+    // 💺 비행기 좌석을 위에서 내려다본 모습
+    drawSeat(o, seed);
+  } else {
+    sloppyFill(ctx,
+      () => wobbleRect(ctx, o.x, o.y, o.w, o.h, seed * 61 + 9, 3.5),
+      hero ? hero.color : '#efe7dc', seed * 67 + 4, 2.5);
 
-  // 사물 그림(이모지)
-  ctx.font = '34px sans-serif';
-  ctx.textAlign = 'center';
-  ctx.textBaseline = 'middle';
-  ctx.fillText(o.icon, o.x + o.w / 2, o.y + o.h / 2 + 2);
+    // 사물 그림(이모지)
+    ctx.font = '34px sans-serif';
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.fillText(o.icon || '📦', o.x + o.w / 2, o.y + o.h / 2 + 2);
+  }
 
   // 아직 안 조사했으면 머리 위에 '!' 가 통통 떠 있어
   if (!o.taken) {
@@ -1522,5 +1536,43 @@ function drawExitCount(exit) {
 
   ctx.textAlign = 'left';
   ctx.textBaseline = 'alphabetic';
+  ctx.restore();
+}
+
+
+/* -----------------------------------------------------------
+   💺 비행기 좌석 그리기 (위에서 내려다본 모습)
+
+   좌석은 세 부분으로 되어 있어:
+     ① 등받이 — 위쪽에 있는 길쭉한 부분
+     ② 방석   — 앉는 자리
+     ③ 팔걸이 — 양옆에 붙은 얇은 막대기
+   ----------------------------------------------------------- */
+function drawSeat(o, seed) {
+  const x = o.x, y = o.y, w = o.w, h = o.h;
+
+  ctx.save();
+  ctx.lineWidth = 3.5;
+  ctx.lineJoin  = 'round';
+  ctx.strokeStyle = '#4a6a8a';
+
+  // ① 등받이 (위쪽 3분의 1)
+  sloppyFill(ctx,
+    () => wobbleRect(ctx, x + 4, y, w - 8, h * 0.34, seed * 91 + 1, 3),
+    '#6f9bc4', seed * 93 + 2, 2);
+
+  // ② 방석 (아래쪽)
+  sloppyFill(ctx,
+    () => wobbleRect(ctx, x + 2, y + h * 0.30, w - 4, h * 0.70, seed * 95 + 3, 3),
+    '#8fb8dc', seed * 97 + 4, 2);
+
+  // ③ 팔걸이 (양옆 얇은 막대기)
+  ctx.fillStyle = '#4a6a8a';
+  for (const side of [0, 1]) {
+    const ax = side === 0 ? x - 2 : x + w - 6;
+    wobbleRect(ctx, ax, y + h * 0.36, 8, h * 0.58, seed * 99 + side, 2);
+    ctx.fill();
+  }
+
   ctx.restore();
 }
