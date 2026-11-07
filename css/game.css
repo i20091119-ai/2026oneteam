@@ -724,3 +724,17 @@
   }
   .menu-on { outline: 5px solid #ffe36b; outline-offset: 4px; }
 }
+
+
+/* ==================== 🏷️ 단서 꼬리표 ==================== */
+/* 이 문제를 어디에 쓰는지 알려주는 작은 꼬리표 (🟨발판 / 🔢장치 / 🔒자물쇠) */
+.clue .tag {
+  display: inline-block;
+  background: #fff1b8;
+  color: #7a5a12;
+  border-radius: 999px;
+  padding: 1px 8px;
+  margin-right: 2px;
+  font-size: 11px;
+  font-weight: 800;
+}

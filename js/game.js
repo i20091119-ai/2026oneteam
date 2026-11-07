@@ -61,6 +61,10 @@ const P_W = 30;            // 캐릭터 너비
 const P_H = 48;            // 캐릭터 키
 const P_H_CROUCH = 32;     // 웅크렸을 때 키
 
+// 👣 방(위에서 보기)에서 부딪히는 건 '발밑'뿐이야.
+//    머리까지 다 부딪히면 문이나 발판을 지나가기가 너무 빡빡해져!
+const ROOM_FOOT = 20;
+
 // 🕳️ 방(위에서 보기)에서 구덩이를 뛰어넘을 때 쓰는 숫자
 const JUMP_Z    = 9.6;     // 뛰어오르는 힘
 const GRAVITY_Z = 0.52;    // 다시 내려오게 하는 힘
@@ -117,6 +121,8 @@ function loadSection() {
   // (다시 하기를 눌렀을 때 문이 열린 채로 남아 있으면 안 되니까!)
   (sec.doors   || []).forEach(d => { d.open = false; d.anim = 0; });
   (sec.buttons || []).forEach(b => b.on   = false);
+  (sec.bridges || []).forEach(b => b.anim = 0);
+  game.solved = new Set();               // 이 방에서 푼 발판 퍼즐 목록
   fx.clear();
 
   game.players = HEROES.map((hero, i) => {
@@ -157,7 +163,13 @@ function loadSection() {
 function getSolids(sec) {
   const base = sec.type === 'platform' ? sec.platforms : sec.walls;
   const closedDoors = (sec.doors || []).filter(d => !d.open);
-  return base.concat(closedDoors);
+
+  // 🌊 깊은 물은 벽처럼 막혀 있어 (점프로도 못 건너!)
+  const waters = sec.waters || [];
+  // 🪵 발판은 퍼즐을 풀기 전까지는 그냥 물이야
+  const noBridge = (sec.bridges || []).filter(b => !game.solved.has(b.by));
+
+  return base.concat(closedDoors, waters, noBridge);
 }
 
 /* --- 옆에서 보는 점프맵에서 움직이기 --- */
@@ -244,7 +256,7 @@ function checkPuddles(sec) {
   if (!sec.puddles) return;
   for (const p of game.players) {
     if (p.z > 0) continue;                 // 공중에 떠 있으면 통과
-    if (p.hurt > 0) { p.hurt--; continue; }
+    if (p.hurt > 0) continue;
     for (const w of sec.puddles) {
       // 발밑(가운데)이 웅덩이 안에 들어갔으면 밟은 거야
       if (p.x > w.x && p.x < w.x + w.w &&
@@ -288,7 +300,7 @@ function moveRoom(p, pad, sec, solids) {
   // 좌우 이동 + 벽 부딪힘
   p.x += p.vx;
   for (const w of solids) {
-    if (hitBox(p, P_H, w)) {
+    if (hitBox(p, ROOM_FOOT, w)) {
       if (p.vx > 0) p.x = w.x - P_W / 2;
       if (p.vx < 0) p.x = w.x + w.w + P_W / 2;
     }
@@ -297,9 +309,9 @@ function moveRoom(p, pad, sec, solids) {
   // 위아래 이동 + 벽 부딪힘
   p.y += p.vy;
   for (const w of solids) {
-    if (hitBox(p, P_H, w)) {
+    if (hitBox(p, ROOM_FOOT, w)) {
       if (p.vy > 0) p.y = w.y;
-      if (p.vy < 0) p.y = w.y + w.h + P_H;
+      if (p.vy < 0) p.y = w.y + w.h + ROOM_FOOT;
     }
   }
 
@@ -336,7 +348,7 @@ function updateButtons(sec) {
     // b.color 번 친구(0=세은, 1=다영, 2=태준)만 이 버튼을 누를 수 있어!
     const owner = game.players[b.color];
     const was = b.on;
-    b.on = owner ? hitBox(owner, P_H, b) : false;
+    b.on = owner ? hitBox(owner, ROOM_FOOT, b) : false;   // 발로 밟아야 눌려!
     // 방금 밟았으면 발밑에서 먼지가 폴폴
     if (b.on && !was) fx.dust(b.x + b.w / 2, b.y + b.h, 8, HEROES[b.color].color);
   }
@@ -376,7 +388,7 @@ function updateDoors(sec) {
 function checkSpikes(sec) {
   if (!sec.spikes) return;
   for (const p of game.players) {
-    if (p.hurt > 0) { p.hurt--; continue; }   // 방금 다쳤으면 잠깐 봐줘
+    if (p.hurt > 0) continue;                 // 방금 다쳤으면 잠깐 봐줘
     for (const s of sec.spikes) {
       if (hitBox(p, p.crouch ? P_H_CROUCH : P_H, s)) { respawn(p, sec); break; }
     }
@@ -434,6 +446,7 @@ function checkInteract(sec) {
         name: obj.name,
         kind: obj.kind,
         question: obj.question,   // 🧠 풀어야 할 문제
+        tag: obj.tag,             // 🏷️ 어디에 쓰는 문제인지 (🟨발판 / 🔢장치 / 🔒자물쇠)
         text: obj.text,           // 📜 그냥 읽는 힌트
         color: obj.color
       });
@@ -446,6 +459,22 @@ function checkInteract(sec) {
       fx.sparkle(obj.x + obj.w / 2, obj.y + obj.h / 2, '#ffd94a', 18, 40);
       updateClueBook();
       break;
+    }
+
+    // --- 🔢 발판 숫자 장치 조사 ---
+    if (!found) {
+      for (const pz of (sec.puzzles || [])) {
+        if (pz.type !== 'device' || game.solved.has(pz.id)) continue;
+        if (!hitBox(p, P_H, pz.at)) continue;
+        found = true;
+        openKeypad({
+          title: '🔢 정답 ' + String(pz.answer).length + '자리를 넣으면 발판이 생겨요',
+          len: String(pz.answer).length,
+          answer: pz.answer,
+          onSolve: () => solvePuzzle(sec, pz)
+        });
+        break;
+      }
     }
 
     // --- 🔒 자물쇠 조사 (누구나 열 수 있어) ---
@@ -622,6 +651,15 @@ function draw() {
   // --- 💧 물웅덩이 그리기 (바닥이니까 먼저 그려야 아래에 깔려) ---
   (sec.puddles || []).forEach((w, i) => drawPuddle(w, i));
 
+  // --- 🌊 깊은 물과 🪵 발판 ---
+  (sec.waters  || []).forEach((w, i) => drawDeepWater(w, i));
+  (sec.bridges || []).forEach((b, i) => drawBridge(b, i));
+
+  // --- 🟨 숫자 칸 (발판 퍼즐) ---
+  (sec.puzzles || []).forEach((pz, i) => {
+    if (pz.type === 'tile' || pz.type === 'team') drawNumberTiles(pz, i);
+  });
+
   // --- 🪤 가시 그리기 ---
   (sec.spikes || []).forEach((s, i) => drawSpikes(s, i));
 
@@ -636,6 +674,11 @@ function draw() {
 
   // --- 🔍 조사할 사물 그리기 ---
   (sec.objects || []).forEach((o, i) => drawObject(o, i));
+
+  // --- 🔢 발판 숫자 장치 ---
+  (sec.puzzles || []).forEach((pz, i) => {
+    if (pz.type === 'device') drawPuzzleDevice(pz, i);
+  });
 
   // --- 🔒 자물쇠 그리기 ---
   if (sec.lock) drawLock(sec.lock);
@@ -672,15 +715,25 @@ function draw() {
   ctx.fillStyle = 'rgba(90,80,110,.6)';
   ctx.font = 'bold 15px sans-serif';
   ctx.textAlign = 'center';
-  if (sec.lock) {
-    ctx.fillText('사물을 조사해 단서를 모으고, 🔒자물쇠에 비밀번호를 넣으세요!', CANVAS_W / 2, 30);
-    ctx.font = 'bold 13px sans-serif';
-    ctx.fillText('사물 가까이에서 Y버튼(상호작용)을 누르세요', CANVAS_W / 2, 50);
+  // 방에 무엇이 있는지에 따라 알맞은 안내를 보여줘
+  const hasBridge = (sec.bridges || []).length > 0;
+  const allBuilt  = hasBridge && sec.bridges.every(b => game.solved.has(b.by));
+  let line1, line2;
+  if (hasBridge && !allBuilt) {
+    line1 = '🧠 가구를 뒤져 문제를 찾고, 풀어서 🌊강 위에 🪵발판을 만들어요!';
+    line2 = sec.lock ? '발판을 건너가면 🔒자물쇠가 있어요'
+          : (sec.doors || []).length ? '같은 색 친구가 같은 색 버튼을 밟으면 문이 열려요'
+          : '셋이 모두 🚪출구에 모이면 다음 방으로!';
+  } else if (sec.lock) {
+    line1 = '사물을 조사해 단서를 모으고, 🔒자물쇠에 비밀번호를 넣으세요!';
+    line2 = '사물 가까이에서 Y버튼(상호작용)을 누르세요';
   } else {
-    ctx.fillText('같은 색 친구가 같은 색 버튼을 밟고 있어야 문이 열려요!', CANVAS_W / 2, 30);
-    ctx.font = 'bold 13px sans-serif';
-    ctx.fillText('셋이 모두 🚪출구에 모이면 다음 구역으로!', CANVAS_W / 2, 50);
+    line1 = '같은 색 친구가 같은 색 버튼을 밟고 있어야 문이 열려요!';
+    line2 = '셋이 모두 🚪출구에 모이면 다음 방으로!';
   }
+  ctx.fillText(line1, CANVAS_W / 2, 30);
+  ctx.font = 'bold 13px sans-serif';
+  ctx.fillText(line2, CANVAS_W / 2, 50);
 
   // --- 💬 잠깐 뜨는 알림 글씨 ---
   if (game.toastTime > 0) {
@@ -1246,10 +1299,15 @@ function loop(now) {
     }
 
     fx.update();                 // ✨ 반짝이 조각들 움직이기
+    updatePuzzles(sec);          // 🟨 숫자 칸을 밟았나? (발판 퍼즐)
     checkSpikes(sec);            // 가시에 닿았나?
     checkPuddles(sec);           // 💧 물웅덩이를 밟았나?
     checkInteract(sec);          // Y버튼으로 사물을 조사했나?
     if (sec.exit) checkExit(sec);// 셋이 출구에 모였나?
+
+    // 다친 뒤 '잠깐 봐주는 시간'을 한 장면마다 하나씩 줄여
+    // (예전엔 가시·웅덩이 검사 안에서 줄였더니, 그게 없는 방에선 영원히 안 줄었어!)
+    for (const pl of game.players) if (pl.hurt > 0) pl.hurt--;
     draw();                      // ④ 그림 그리기
 
 
@@ -1290,11 +1348,13 @@ function updateClueBook() {
     if (c.kind === 'quiz') {
       // 문제만 보여주고 답은 알려주지 않아! 셋이 풀어야 해 🧠
       return '<div class="clue quiz">' +
-               '<span class="where">' + (c.icon || '🧠') + ' ' + c.name + '</span>' +
+               '<span class="where">' +
+                 (c.tag ? '<b class="tag">' + c.tag + '</b> ' : '') +
+                 (c.icon || '🧠') + ' ' + c.name + '</span>' +
                '<span class="q">' + c.question.replace(/\n/g, '<br>') + '</span>' +
              '</div>';
     }
-    return '<div class="clue hint">' + (c.icon || '📜') + ' ' + c.text + '</div>';
+    return '<div class="clue hint">' + (c.icon || '📜') + ' ' + c.text.replace(/\n/g, '<br>') + '</div>';
   }).join('');
 }
 
@@ -1315,16 +1375,36 @@ const lockOverlay = document.getElementById('lockOverlay');
 // 키패드에 들어갈 것들 (3칸씩 4줄)
 const KEYPAD = ['1','2','3', '4','5','6', '7','8','9', '←','0','✓'];
 
-function openLock() {
+/* -----------------------------------------------------------
+   숫자 키패드 열기 (여러 곳에서 같이 써!)
+     🔒 마지막 자물쇠  → 4자리, 맞으면 탈출
+     🔢 발판 숫자 장치 → 답 자릿수만큼, 맞으면 발판이 생김
+   ----------------------------------------------------------- */
+function openKeypad(opts) {
   if (game.lockOpen) return;
-  game.lockOpen = true;
-  game.typed = '';           // 지금까지 누른 숫자
-  game.cursor = 0;           // 스틱으로 고른 칸 번호
+  game.lockOpen  = true;
+  game.typed     = '';                 // 지금까지 누른 숫자
+  game.cursor    = 0;                  // 스틱으로 고른 칸 번호
+  game.keyLen    = opts.len;           // 몇 자리를 넣어야 하나
+  game.keyAnswer = String(opts.answer);// 정답
+  game.keyOnSolve = opts.onSolve;      // 맞으면 할 일
   game.paused = true;
+  document.getElementById('lockTitle').textContent = opts.title;
   lockOverlay.classList.add('active');
   buildKeypad();
   drawPassword();
   sound.select();
+}
+
+/* 🔒 마지막 자물쇠 열기 */
+function openLock() {
+  const sec = currentSection();
+  openKeypad({
+    title: '🔒 비밀번호 ' + sec.password.length + '자리',
+    len: sec.password.length,
+    answer: sec.password,
+    onSolve: clearStage                // 탈출 성공! 🎉
+  });
 }
 
 function closeLock() {
@@ -1359,7 +1439,7 @@ function drawCursor() {
 function drawPassword() {
   const d = document.getElementById('pwDisplay');
   let html = '';
-  for (let i = 0; i < 4; i++) {
+  for (let i = 0; i < game.keyLen; i++) {
     const ch = game.typed[i];
     html += '<div class="pw-slot' + (ch ? ' filled' : '') + '">' + (ch || '') + '</div>';
   }
@@ -1376,7 +1456,7 @@ function pressKey(i) {
   } else if (k === '✓') {                // 확인!
     submitPassword();
     return;
-  } else if (game.typed.length < 4) {    // 숫자 넣기
+  } else if (game.typed.length < game.keyLen) {    // 숫자 넣기
     game.typed += k;
     sound.beep(500 + Number(k) * 40, 0.07, 'square', 0.12);
   }
@@ -1385,11 +1465,10 @@ function pressKey(i) {
 
 /* 비밀번호가 맞는지 확인 */
 function submitPassword() {
-  const sec = currentSection();
-
-  if (game.typed === sec.password) {
+  if (game.typed === game.keyAnswer) {
+    const whenSolved = game.keyOnSolve;
     closeLock();
-    clearStage();                        // 탈출 성공! 🎉
+    if (whenSolved) whenSolved();        // 맞혔을 때 할 일 (탈출 또는 발판 만들기)
   } else {
     // 틀리면 창이 부르르 떨려
     const box = document.querySelector('.lock-box');
@@ -1865,3 +1944,279 @@ for (const ids of Object.values(MENUS)) {
 }
 
 paintMenuCursor();
+
+
+/* ===========================================================
+   🪵 발판 퍼즐
+   -----------------------------------------------------------
+   학생들 아이디어: "방에서 문제를 풀면 발판이 생겨서 길이 열린다!"
+
+   방 가운데에 🌊깊은 물이 있어서 출구로 못 가.
+   (깊은 물은 벽처럼 막혀 있어서 점프로도 못 건너!)
+   문제를 풀어서 답을 넣으면 → 물 위에 🪵발판이 생겨.
+
+   답을 넣는 방법은 세 가지야 (학생들이 "다 섞어서!"라고 정함)
+     🔢 device : 숫자 장치에 답을 입력해
+     🟨 tile   : 바닥 숫자 칸 중 정답 칸을 밟아 (한 자리)
+     🟩 team   : 정답 세 칸을 셋이 '동시에' 밟아 (세 자리)
+
+   ⚠️ 숫자 칸에서 틀린 칸을 밟으면 함정! 처음 자리로 돌아가.
+   ✨ 한 번 생긴 발판은 계속 남아 있어.
+   =========================================================== */
+
+// 숫자 칸 하나의 크기와 사이 간격
+const TILE = 34;
+const TILE_GAP = 5;
+
+/* 숫자 d 칸이 어디에 있는지 계산해줘
+   (위 줄: 0 1 2 3 4 / 아래 줄: 5 6 7 8 9) */
+function tileRect(pz, d) {
+  const col = d % 5;
+  const row = Math.floor(d / 5);
+  return {
+    x: pz.tiles.x + col * (TILE + TILE_GAP),
+    y: pz.tiles.y + row * (TILE + TILE_GAP),
+    w: TILE,
+    h: TILE
+  };
+}
+
+/* 이 친구가 몇 번 칸을 밟고 있나? (안 밟고 있으면 null) */
+function digitUnder(p, pz) {
+  if (p.z > 0) return null;                // 점프 중이면 안 밟은 거야
+  for (let d = 0; d < 10; d++) {
+    const r = tileRect(pz, d);
+    if (p.x > r.x && p.x < r.x + r.w && p.y > r.y && p.y < r.y + r.h) return d;
+  }
+  return null;
+}
+
+/* 매 순간 숫자 칸을 확인해 */
+function updatePuzzles(sec) {
+  for (const pz of (sec.puzzles || [])) {
+    if (pz.type !== 'tile' && pz.type !== 'team') continue;
+    if (game.solved.has(pz.id)) continue;           // 이미 푼 퍼즐은 그만
+
+    const answer = String(pz.answer).split('').map(Number);
+    const stepped = [];                             // 정답 칸 위에 서 있는 숫자들
+
+    for (const p of game.players) {
+      if (p.hurt > 0) continue;                     // 방금 함정에 빠졌으면 잠깐 봐줘
+      const d = digitUnder(p, pz);
+      if (d === null) continue;
+
+      if (!answer.includes(d)) {
+        // 💥 틀린 칸 = 함정!
+        showToast('💥 ' + d + ' 칸은 함정이었어! 처음 자리로…');
+        fx.dust(p.x, p.y, 12, '#b9a27a');
+        respawn(p, sec);
+        continue;
+      }
+      stepped.push(d);
+    }
+
+    // 정답 칸이 하나도 빠짐없이 '동시에' 밟혀 있으면 성공!
+    if (answer.every(d => stepped.includes(d))) solvePuzzle(sec, pz);
+  }
+}
+
+/* 퍼즐을 풀었을 때 — 발판이 생겨! */
+function solvePuzzle(sec, pz) {
+  if (game.solved.has(pz.id)) return;
+  game.solved.add(pz.id);
+
+  sound.door();
+  setTimeout(() => sound.clue(), 220);
+  showToast('✨ 정답! 발판이 생겼어!');
+
+  // 발판 자리에서 반짝반짝
+  for (const b of (sec.bridges || [])) {
+    if (b.by !== pz.id) continue;
+    fx.sparkle(b.x + b.w / 2, b.y + b.h / 2, '#ffd94a', 26, Math.max(b.w, b.h));
+  }
+}
+
+
+/* -----------------------------------------------------------
+   🌊 깊은 물 그리기 — 물결이 출렁출렁
+   (네모를 반듯하게 칠해야 여러 조각이 한 줄기 강처럼 이어져 보여)
+   ----------------------------------------------------------- */
+function drawWaterBody(x, y, w, h) {
+  ctx.save();
+  ctx.fillStyle = '#4a86bd';
+  ctx.fillRect(x, y, w, h);
+
+  // 하얀 물결 무늬가 천천히 움직여
+  ctx.beginPath();
+  ctx.rect(x, y, w, h);
+  ctx.clip();
+  ctx.strokeStyle = 'rgba(255,255,255,.42)';
+  ctx.lineWidth = 2.5;
+  ctx.lineCap = 'round';
+  const t = game.time * 0.002;
+  for (let yy = y + 12; yy < y + h; yy += 24) {
+    for (let xx = x + 4; xx < x + w; xx += 28) {
+      const off = Math.sin(t + xx * 0.05 + yy * 0.07) * 3;
+      ctx.beginPath();
+      ctx.moveTo(xx, yy + off);
+      ctx.quadraticCurveTo(xx + 7, yy - 5 + off, xx + 14, yy + off);
+      ctx.stroke();
+    }
+  }
+  ctx.restore();
+}
+
+function drawDeepWater(w) {
+  drawWaterBody(w.x, w.y, w.w, w.h);
+}
+
+/* -----------------------------------------------------------
+   🪵 발판 그리기
+   풀기 전 : 그냥 물 + "여기에 생길 것 같은" 흐릿한 점선
+   푼 뒤   : 나무 발판이 하나씩 퐁퐁 나타나!
+   ----------------------------------------------------------- */
+function drawBridge(b, seed) {
+  drawWaterBody(b.x, b.y, b.w, b.h);
+
+  const solved = game.solved.has(b.by);
+  if (b.anim === undefined) b.anim = 0;
+  b.anim += ((solved ? 1 : 0) - b.anim) * 0.12;   // 스르륵 바뀌게
+
+  ctx.save();
+  ctx.lineJoin = 'round';
+
+  if (b.anim < 0.05) {
+    // 아직 — 흐릿한 점선으로 '여기에 길이 생길 거야' 힌트
+    ctx.globalAlpha = 0.45;
+    ctx.setLineDash([7, 6]);
+    ctx.strokeStyle = '#ffffff';
+    ctx.lineWidth = 2.5;
+    wobbleRect(ctx, b.x + 3, b.y + 3, b.w - 6, b.h - 6, seed * 7 + 801, 2);
+    ctx.stroke();
+    ctx.setLineDash([]);
+  } else {
+    // 나무판 세 장 — 강을 가로질러 놓여
+    // 강이 세로로 길면 판자를 가로로 눕히고, 가로로 길면 세로로 세워
+    const across = b.h >= b.w;
+    const n = 3;
+    for (let i = 0; i < n; i++) {
+      const show = Math.min(1, Math.max(0, b.anim * n - i));   // 하나씩 차례로 나타나
+      if (show <= 0) continue;
+      ctx.save();
+      let x, y, w, h;
+      if (across) { h = b.h / n - 4; w = b.w + 10; x = b.x - 5; y = b.y + 2 + i * (b.h / n); }
+      else        { w = b.w / n - 4; h = b.h + 10; y = b.y - 5; x = b.x + 2 + i * (b.w / n); }
+      ctx.translate(x + w / 2, y + h / 2);
+      ctx.scale(show, show);
+      ctx.strokeStyle = '#6f4f2a';
+      ctx.lineWidth = 3;
+      sloppyFill(ctx, () => wobbleRect(ctx, -w / 2, -h / 2, w, h, seed * 11 + i, 2.5),
+                 '#c99a63', seed * 13 + i, 1.5);
+      ctx.restore();
+    }
+  }
+  ctx.restore();
+}
+
+
+/* -----------------------------------------------------------
+   🟨 바닥 숫자 칸 그리기
+   누가 밟고 있으면 그 친구 색으로 칠해져!
+   ----------------------------------------------------------- */
+function drawNumberTiles(pz, seed) {
+  const solved = game.solved.has(pz.id);
+
+  // 누가 몇 번 칸을 밟고 있는지 알아내
+  const who = {};
+  for (const p of game.players) {
+    const d = digitUnder(p, pz);
+    if (d !== null) who[d] = p.hero;
+  }
+
+  ctx.save();
+  ctx.lineJoin = 'round';
+  ctx.globalAlpha = solved ? 0.55 : 1;
+
+  for (let d = 0; d < 10; d++) {
+    const r = tileRect(pz, d);
+    const hero = who[d];
+    const fill = solved ? '#f3e2a8' : hero ? hero.color : '#fffaf0';
+    ctx.strokeStyle = hero ? hero.dark : '#8a7a5f';
+    ctx.lineWidth = 3;
+    sloppyFill(ctx, () => wobbleRect(ctx, r.x, r.y, r.w, r.h, seed * 37 + d, 2), fill, seed * 41 + d, 1.5);
+
+    ctx.fillStyle = '#4a4458';
+    ctx.font = 'bold 18px sans-serif';
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.fillText(String(d), r.x + r.w / 2, r.y + r.h / 2 + 1);
+  }
+
+  // 위에 붙는 안내 글씨
+  const label = solved ? '✨ 풀었다!'
+              : pz.type === 'team' ? '🟩🟨🟥 정답 칸을 셋이 동시에!'
+              : '🟨 정답 칸을 밟아요 (틀리면 함정!)';
+  ctx.globalAlpha = 1;
+  ctx.font = 'bold 13px sans-serif';
+  ctx.textAlign = 'left';
+  ctx.textBaseline = 'alphabetic';
+  ctx.lineWidth = 4;
+  ctx.strokeStyle = '#fff';
+  ctx.strokeText(label, pz.tiles.x, pz.tiles.y - 8);
+  ctx.fillStyle = pz.type === 'team' ? '#b23a48' : '#8a6a12';
+  ctx.fillText(label, pz.tiles.x, pz.tiles.y - 8);
+  ctx.restore();
+}
+
+
+/* -----------------------------------------------------------
+   🔢 발판 숫자 장치 그리기 — 작은 화면이 달린 기계
+   ----------------------------------------------------------- */
+function drawPuzzleDevice(pz, seed) {
+  const a = pz.at;
+  const solved = game.solved.has(pz.id);
+
+  ctx.save();
+  ctx.lineJoin = 'round';
+  ctx.lineWidth = 3.5;
+  ctx.strokeStyle = '#4a4a56';
+  sloppyFill(ctx, () => wobbleRect(ctx, a.x, a.y, a.w, a.h, seed * 43 + 3, 3), '#9aa3b0', seed * 47 + 5, 2);
+
+  // 화면 — 풀기 전엔 '?', 풀고 나면 정답이 초록색으로!
+  const sx = a.x + a.w * 0.14, sy = a.y + a.h * 0.16;
+  const sw = a.w * 0.72,       sh = a.h * 0.46;
+  ctx.fillStyle = '#2f3440';
+  wobbleRect(ctx, sx, sy, sw, sh, seed * 53 + 7, 2);
+  ctx.fill();
+  ctx.fillStyle = solved ? '#8fe6b4' : '#ffd94a';
+  ctx.font = 'bold 16px sans-serif';
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'middle';
+  ctx.fillText(solved ? String(pz.answer) : '?'.repeat(String(pz.answer).length), sx + sw / 2, sy + sh / 2 + 1);
+
+  // 아래 버튼 세 개
+  ctx.fillStyle = '#4a4a56';
+  for (let i = 0; i < 3; i++) {
+    wobbleCircle(ctx, a.x + a.w * (0.28 + i * 0.22), a.y + a.h * 0.80, 3.5, seed + i, 0.3);
+    ctx.fill();
+  }
+
+  // 가까이 가면 Y 말풍선
+  if (!solved && anyPlayerNear(a)) {
+    const bob = Math.sin(game.time * 0.008) * 3;
+    const bx = a.x + a.w / 2, by = a.y - 20 + bob;
+    ctx.fillStyle = '#fffbe8';
+    ctx.strokeStyle = '#c9a227';
+    ctx.lineWidth = 3;
+    wobbleCircle(ctx, bx, by, 14, seed * 59 + 1, 0.14);
+    ctx.fill();
+    ctx.stroke();
+    ctx.fillStyle = '#8a6a12';
+    ctx.font = 'bold 15px sans-serif';
+    ctx.fillText('Y', bx, by + 1);
+  }
+
+  ctx.textAlign = 'left';
+  ctx.textBaseline = 'alphabetic';
+  ctx.restore();
+}
