@@ -9,7 +9,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>🕹️ 조종기 점검기</title>
-  <link rel="stylesheet" href="css/style.css?v=1107d">
+  <link rel="stylesheet" href="css/style.css?v=1107e">
   <style>
     body { align-items: flex-start; }
     .card { max-width: 920px; text-align: left; padding: 28px 28px 24px; }
@@ -92,6 +92,17 @@
     .foot { display: flex; gap: 10px; justify-content: center; flex-wrap: wrap; margin-top: 18px; }
     .btn.small { padding: 10px 20px; font-size: 15px; background: var(--pink); box-shadow: 0 6px 0 #f195b1; }
     .ver { text-align: center; font-size: 11px; color: var(--ink-soft); margin-top: 12px; }
+
+    [hidden] { display: none !important; }
+
+    /* ---- 🎯 버튼 맞추기 ---- */
+    .learn { background: #eef6ff; border-radius: 18px; padding: 16px 18px; margin-bottom: 16px; }
+    .learn h3 { margin: 0 0 6px; font-size: 18px; }
+    .learn p { margin: 4px 0; font-size: 14px; }
+    .learn .ask { font-size: 22px; font-weight: 900; margin: 10px 0; }
+    .learn .done { font: 13px/1.7 ui-monospace, monospace; }
+    .learn .btn.small { margin: 6px 6px 0 0; }
+    .learn .btn.blue { background: #8fc8ff; box-shadow: 0 6px 0 #5fa5e6; }
   </style>
 </head>
 <body>
@@ -108,6 +119,16 @@
   <!-- 찾은 조이스틱들 -->
   <div class="pads" id="pads"></div>
 
+  <!-- 🎯 버튼 맞추기 (DINPUT 모드처럼 버튼 번호가 다를 때) -->
+  <div class="learn" id="learnBox">
+    <h3>🎯 버튼 맞추기</h3>
+    <p>X를 눌렀는데 엉뚱한 동작이 되나요? 버튼을 하나씩 눌러서 게임에 가르쳐 주세요!</p>
+    <div id="learnBody"></div>
+    <button class="btn small blue" id="learnStart">🎯 버튼 맞추기 시작</button>
+    <button class="btn small" id="learnSkip" hidden>⏭️ 이 버튼은 없어요 (건너뛰기)</button>
+    <button class="btn small" id="learnClear">↩️ 맞춘 것 지우기</button>
+  </div>
+
   <!-- 키보드 -->
   <div class="kbd-box">⌨️ 키보드로 들어온 키: <b id="keyNow">–</b>
     <div style="font-size:12px;color:var(--ink-soft);margin-top:4px">
@@ -119,7 +140,7 @@
     <button class="btn small" id="resetBtn">🧹 지우고 다시</button>
     <a class="btn small" href="index.html">🎮 게임으로</a>
   </div>
-  <p class="ver">점검기 버전 2026-11-07d · 이 화면을 사진 찍어서 보내주면 원인을 같이 찾을 수 있어요 📸</p>
+  <p class="ver">점검기 버전 2026-11-07e · 이 화면을 사진 찍어서 보내주면 원인을 같이 찾을 수 있어요 📸</p>
 </main>
 
 <script>
@@ -174,6 +195,7 @@ function loop() {
   const pads = HAS_API ? Array.from(navigator.getGamepads()).filter(Boolean) : [];
   drawPads(pads);
   drawVerdict(pads);
+  updateLearn(pads);
   requestAnimationFrame(loop);
 }
 
@@ -183,7 +205,8 @@ function drawPads(pads) {
 
   box.innerHTML = pads.map((pad, slot) => {
     seen[pad.index] = seen[pad.index] || new Set();
-    const mode = pad.mapping === 'standard' ? 'XINPUT (표준) 모드' : 'DINPUT (비표준) 모드';
+    const mode = (pad.mapping === 'standard' ? 'XINPUT (표준) 모드' : 'DINPUT (비표준) 모드') +
+                 (padMaps[pad.id] ? ' · 🎯 맞춘 버튼 사용 중' : '');
 
     // 버튼 0 ~ (개수-1)
     let btns = '';
@@ -253,6 +276,7 @@ function drawVerdict(pads) {
            '<ol>' +
            '<li>조이스틱 1번은 <b>' + (NAMES[owner[0]] || '') + '</b>이(가) 조종해요. 바꾸려면 조이스틱 위 <b>SELECT</b>!</li>' +
            (std ? '' : '<li>지금은 <b>DINPUT 모드</b>예요. 스틱이 안 움직이면 스틱 스위치를 <b>LS</b>로 바꿔 보세요.</li>') +
+           (std || pads.every(p => padMaps[p.id]) ? '' : '<li>버튼이 엉뚱하게 움직이면 아래 <b>🎯 버튼 맞추기</b>를 해주세요!</li>') +
            '<li>여기서는 되는데 게임에서 안 되면 → 게임 화면에서 <b>Ctrl + Shift + R</b> (맥은 <b>Cmd + Shift + R</b>) 로 새로고침!</li>' +
            '</ol>';
   } else if (keyboardHit) {
@@ -278,6 +302,105 @@ function drawVerdict(pads) {
 
   v.className = 'verdict ' + cls;
   if (v.innerHTML !== html) v.innerHTML = html;
+}
+
+
+/* ===========================================================
+   5. 🎯 버튼 맞추기
+   -----------------------------------------------------------
+   맥(Mac)에서는 XINPUT 모드를 못 알아봐서 DINPUT 모드로 써야 하는데,
+   그러면 조이스틱마다 버튼 번호가 달라!
+   그래서 "X 버튼 눌러줘 → 몇 번이네!" 하고 하나씩 배워서 저장해.
+   게임(js/input.js)이 이 저장된 번호표를 꺼내 써.
+   =========================================================== */
+const STEPS = [
+  ['jump',     'X 버튼 (점프)'],
+  ['interact', 'Y 버튼 (조사)'],
+  ['run',      'A 버튼 (달리기)'],
+  ['settings', 'B 버튼 (설정)'],
+  ['item',     'LB 버튼'],
+  ['crouch',   'RB 버튼'],
+  ['restart',  'LT 버튼 (다시하기)'],
+  ['pause',    'RT 버튼 (정지)'],
+  ['select',   'SELECT 버튼 (친구 바꾸기)']
+];
+
+let padMaps = {};
+try { padMaps = JSON.parse(localStorage.getItem('padMaps')) || {}; } catch (e) {}
+
+let learn = null;   // 배우는 중이면 { pad: 조이스틱 번호, step, map, prev }
+
+function pressedSet(pad) {
+  const s = new Set();
+  pad.buttons.forEach((b, n) => { if (b.pressed) s.add(n); });
+  return s;
+}
+
+document.getElementById('learnStart').addEventListener('click', () => {
+  learn = { pad: null, step: 0, buttons: {}, select: undefined, prev: new Map() };
+  document.getElementById('learnSkip').hidden = false;
+  showLearn();
+});
+
+document.getElementById('learnSkip').addEventListener('click', () => {
+  if (learn) { learn.step++; checkLearnDone(); showLearn(); }
+});
+
+document.getElementById('learnClear').addEventListener('click', () => {
+  padMaps = {};
+  try { localStorage.removeItem('padMaps'); } catch (e) {}
+  learn = null;
+  document.getElementById('learnSkip').hidden = true;
+  document.getElementById('learnBody').innerHTML = '<p>↩️ 지웠어요. 이제 기본 번호표를 써요.</p>';
+});
+
+function updateLearn(pads) {
+  if (!learn || learn.step >= STEPS.length) return;
+  for (const pad of pads) {
+    const now = pressedSet(pad);
+    const prev = learn.prev.get(pad.index) || new Set();
+    learn.prev.set(pad.index, now);
+    // 처음 버튼을 누른 조이스틱이 '배울 조이스틱'이 돼
+    if (learn.pad !== null && learn.pad !== pad.index) continue;
+    for (const n of now) {
+      if (prev.has(n)) continue;            // 방금 막 누른 버튼만!
+      learn.pad = pad.index;
+      learn.id = pad.id;
+      const action = STEPS[learn.step][0];
+      if (action === 'select') learn.select = n;
+      else learn.buttons[n] = action;
+      learn.step++;
+      checkLearnDone();
+      showLearn();
+      return;
+    }
+  }
+}
+
+function checkLearnDone() {
+  if (learn.step < STEPS.length) return;
+  document.getElementById('learnSkip').hidden = true;
+  if (!learn.id) return;
+  padMaps[learn.id] = { buttons: learn.buttons, select: learn.select === undefined ? 8 : learn.select };
+  try { localStorage.setItem('padMaps', JSON.stringify(padMaps)); } catch (e) {}
+}
+
+function showLearn() {
+  const body = document.getElementById('learnBody');
+  const list = STEPS.map(([action, name]) => {
+    const n = action === 'select' ? learn.select :
+      Object.keys(learn.buttons).find(k => learn.buttons[k] === action);
+    return name + ' → ' + (n === undefined ? '–' : n + '번');
+  }).join('<br>');
+
+  if (learn.step < STEPS.length) {
+    body.innerHTML = '<div class="ask">👉 조이스틱의 <u>' + STEPS[learn.step][1] + '</u>을(를) 눌러 주세요 (' +
+      (learn.step + 1) + '/' + STEPS.length + ')</div><div class="done">' + list + '</div>';
+  } else {
+    body.innerHTML = '<div class="ask">✅ 다 맞췄어요! 이제 게임에서 이 번호표를 써요</div>' +
+      '<div class="done">' + list + '</div>' +
+      '<p>🎮 게임으로 가서 <b>Ctrl+Shift+R</b>(맥은 <b>Cmd+Shift+R</b>)로 새로고침하세요.</p>';
+  }
 }
 
 document.getElementById('resetBtn').addEventListener('click', () => {

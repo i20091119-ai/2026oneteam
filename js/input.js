@@ -164,6 +164,11 @@ class InputManager {
     //    → 조이스틱 1번 = 다영, 2번 = 세은, 3번 = 태준
     this.padOwner = loadPadOwner() || [1, 0, 2];
     this.onOwnerChange = null;   // 배정이 바뀌면 게임에 알려줄 약속
+
+    // 🎯 점검기에서 '버튼 맞추기'로 저장한 버튼 번호표 (조이스틱 이름별)
+    //    맥에서 DINPUT 모드로 쓰면 버튼 번호가 조이스틱마다 달라서 필요해!
+    this.padMaps = loadPadMaps();
+    window.addEventListener('storage', () => { this.padMaps = loadPadMaps(); });
     this.lastPadState = {}; // 조종기 버튼이 '방금 눌렸는지' 알아내려고 이전 상태를 기억
 
     this._listenKeyboard();
@@ -267,8 +272,12 @@ class InputManager {
       player.padSlot = slot;                      // 몇 번째 조이스틱인지 (0부터)
       this.padIds[slot] = pad.id;
 
-      // --- SELECT 버튼(8번) → 이 조이스틱으로 조종할 친구 바꾸기 ---
-      const sel = !!(pad.buttons[8] && pad.buttons[8].pressed);
+      // 🎯 이 조이스틱용으로 맞춘 번호표가 있으면 그걸 써
+      const custom = this.padMaps[pad.id];
+
+      // --- SELECT 버튼(보통 8번) → 이 조이스틱으로 조종할 친구 바꾸기 ---
+      const selNum = custom && custom.select !== undefined ? custom.select : 8;
+      const sel = !!(pad.buttons[selNum] && pad.buttons[selNum].pressed);
       const selKey = slot + '-select';
       if (sel && !this.lastPadState[selKey]) {
         this.lastPadState[selKey] = true;
@@ -279,7 +288,9 @@ class InputManager {
 
       // --- 버튼 확인 ---
       // XINPUT 이면 표준 배치, DINPUT 이면 PS3 배치 표를 써
-      const table = pad.mapping === 'standard' ? PAD_BUTTONS : PAD_BUTTONS_DINPUT;
+      //   (점검기에서 버튼을 맞췄다면 그 번호표가 1등!)
+      const table = custom ? custom.buttons
+                  : pad.mapping === 'standard' ? PAD_BUTTONS : PAD_BUTTONS_DINPUT;
       pad.buttons.forEach((btn, num) => {
         const action = table[num];
         if (!action) return;
@@ -391,6 +402,16 @@ function loadPadOwner() {
 
 function savePadOwner(v) {
   try { localStorage.setItem('padOwner', JSON.stringify(v)); } catch (e) { /* 못 기억해도 괜찮아 */ }
+}
+
+/* 🎯 '버튼 맞추기' 번호표 꺼내오기
+   모양: { "조이스틱 이름": { buttons: { "0": "jump", ... }, select: 8 } } */
+function loadPadMaps() {
+  try {
+    const v = JSON.parse(localStorage.getItem('padMaps'));
+    if (v && typeof v === 'object') return v;
+  } catch (e) { /* 없으면 빈 표 */ }
+  return {};
 }
 
 
