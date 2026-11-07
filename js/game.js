@@ -1272,6 +1272,26 @@ function drawDoor(d) {
    ⑧ 게임 루프 — 1초에 60번 반복되는 심장 💓
    ----------------------------------------------------------- */
 function loop(now) {
+  // 🛟 다음 장면 예약을 '맨 먼저' 해둬!
+  //    예전엔 맨 끝에서 예약했더니, 중간에 오류가 한 번만 나도
+  //    게임이 통째로 멈추고 조이스틱도 안 먹었어.
+  requestAnimationFrame(loop);
+  try {
+    step(now);
+  } catch (err) {
+    // 오류가 나도 게임은 계속 돌아가고, 무슨 오류인지 화면에 알려줘
+    console.error(err);
+    if (game.lastError !== err.message) {
+      game.lastError = err.message;
+      showToast('⚠️ 앗, 오류가 났어요 (사진 찍어 주세요)\n' + err.message);
+      game.toastTime = 400;   // 오류 알림은 좀 더 오래 (약 7초)
+    }
+    input.endFrame();
+  }
+}
+
+/* 한 장면(1/60초) 동안 할 일 */
+function step(now) {
   game.time = now;
   updateDoodleSeed(now);        // 손그림이 보글보글 꿈틀거리게
 
@@ -1335,9 +1355,14 @@ function loop(now) {
     if (anyonePressed('settings')) openOverlay();
   }
 
-  // 정지 중에도 조종기로 다시 시작할 수 있게
+  // ⏸ 정지 중
+  //    예전엔 그림만 딱 멈추고 아무 표시도 없어서 '고장 났다'고 생각했어!
+  //    이제는 크게 "잠깐 멈춤"을 보여주고,
+  //    RT(정지) 말고 X·Y 버튼을 눌러도 다시 움직여.
   else if (game.paused) {
-    if (anyonePressed('pause')) togglePause();
+    draw();
+    drawPauseBanner();
+    if (anyonePressed('pause') || anyonePressed('jump') || anyonePressed('interact')) togglePause();
   }
 
   // ⏱ 시계 — 돌아가야 할 때만 시간을 더해줘
@@ -1355,8 +1380,30 @@ function loop(now) {
   input.endFrame();              // '막 눌림' 표시 지우기
 
   if (game.screen === 'clear') drawFireworks();
+}
 
-  requestAnimationFrame(loop);   // 다음 장면에도 나를 또 불러줘!
+
+/* ⏸ "잠깐 멈춤" 안내판 — 정지했을 때 그림 위에 크게 보여줘 */
+function drawPauseBanner() {
+  ctx.save();
+  ctx.fillStyle = 'rgba(40, 30, 60, 0.45)';
+  ctx.fillRect(0, 0, CANVAS_W, CANVAS_H);
+
+  ctx.fillStyle = '#fffdf6';
+  ctx.strokeStyle = '#3a2f4a';
+  ctx.lineWidth = 4;
+  ctx.beginPath();
+  ctx.roundRect(CANVAS_W / 2 - 250, CANVAS_H / 2 - 80, 500, 160, 24);
+  ctx.fill();
+  ctx.stroke();
+
+  ctx.textAlign = 'center';
+  ctx.fillStyle = '#3a2f4a';
+  ctx.font = 'bold 40px sans-serif';
+  ctx.fillText('⏸️ 잠깐 멈춤', CANVAS_W / 2, CANVAS_H / 2 - 15);
+  ctx.font = 'bold 21px sans-serif';
+  ctx.fillText('🕹️ X 버튼 · RT 버튼  /  ⌨️ P 키  →  계속하기', CANVAS_W / 2, CANVAS_H / 2 + 40);
+  ctx.restore();
 }
 
 
@@ -1620,6 +1667,15 @@ function renderPadAssign() {
 input.onOwnerChange = (slot, p) => {
   sound.swap();
   showToast('🕹️ 조이스틱 ' + (slot + 1) + '번 → ' + HEROES[p].emoji + ' ' + HEROES[p].name);
+  updatePlayerBar();
+  renderPadAssign();
+};
+
+// 🔌 조이스틱이 꽂히거나 빠지면 화면에 알려줘
+//    (USB 허브 전기가 모자라면 잠깐 빠졌다 다시 꽂힐 수 있어!)
+input.onPadChange = (before, now) => {
+  if (now > before) showToast('🔌 조이스틱 연결됨! (지금 ' + now + '개)');
+  else              showToast('⚠️ 조이스틱이 빠졌어요! (지금 ' + now + '개)\nUSB 선을 확인해 주세요');
   updatePlayerBar();
   renderPadAssign();
 };

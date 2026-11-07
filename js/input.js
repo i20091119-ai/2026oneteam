@@ -41,9 +41,9 @@ const PAD_BUTTONS = {
   4: 'item',      // LB / L1 아이템 사용
   5: 'crouch',    // RB / R1 웅크리기
   6: 'restart',   // LT / L2 다시하기
-  7: 'pause',     // RT / R2 정지
-  // 십자패드(D-pad)를 버튼으로 보내는 조종기도 있어서 같이 적어둬
-  12: 'up', 13: 'down', 14: 'left', 15: 'right'
+  7: 'pause'      // RT / R2 정지
+  // 십자패드(D-pad) 12~15번은 아래 '방향' 부분에서 스틱이랑 함께 읽어
+  // (따로 읽었더니, 하나를 떼면 다른 하나를 누르고 있어도 멈춰버렸어!)
 };
 
 
@@ -245,6 +245,17 @@ class InputManager {
       if (pad) livePads.push(pad);
     }
 
+    // 🔌 조이스틱이 빠지거나 새로 꽂혔나?
+    //    빠진 순간 누르고 있던 버튼이 '눌린 채로' 남으면
+    //    캐릭터가 혼자 계속 미끄러져! → 모두 손 뗀 걸로 해줘
+    const sig = livePads.map(p => p.index + ':' + p.id).join('|');
+    if (sig !== this.padSig) {
+      const before = this.padSig === undefined ? null : (this.padSig ? this.padSig.split('|').length : 0);
+      this.padSig = sig;
+      this.releaseAll();
+      if (before !== null && this.onPadChange) this.onPadChange(before, livePads.length);
+    }
+
     // 배정표(padOwner)대로 조이스틱을 친구들에게 나눠줘
     // 조이스틱이 없는 친구는 키보드를 쓰면 돼!
     for (const pl of this.players) { pl.padIndex = null; pl.padSlot = null; }
@@ -298,10 +309,14 @@ class InputManager {
       // 특별한 숫자 하나로 와. 그것도 읽어줘!
       const hat = readHat(pad);
 
-      this._stick(player, slot, 'left',  x < -DEAD || hat.left);
-      this._stick(player, slot, 'right', x >  DEAD || hat.right);
-      this._stick(player, slot, 'up',    y < -DEAD || hat.up);
-      this._stick(player, slot, 'down',  y >  DEAD || hat.down);
+      // 표준 배치의 십자패드 버튼(12~15번)
+      const dp = (n) => pad.mapping === 'standard' && !!(pad.buttons[n] && pad.buttons[n].pressed);
+
+      // 스틱 · 십자패드 · 햇 중 '하나라도' 그쪽이면 그 방향!
+      this._stick(player, slot, 'left',  x < -DEAD || hat.left  || dp(14));
+      this._stick(player, slot, 'right', x >  DEAD || hat.right || dp(15));
+      this._stick(player, slot, 'up',    y < -DEAD || hat.up    || dp(12));
+      this._stick(player, slot, 'down',  y >  DEAD || hat.down  || dp(13));
     });
   }
 
@@ -328,15 +343,20 @@ class InputManager {
     this.padOwner[slot] = player;
 
     // 바뀌는 순간 누르고 있던 버튼이 '눌린 채로' 남지 않게 모두 떼어줘
+    this.releaseAll();
+
+    savePadOwner(this.padOwner);
+    if (this.onOwnerChange) this.onOwnerChange(slot, player);
+  }
+
+  /* 모든 버튼에서 손을 뗀 걸로 해주기 (SELECT 기억은 남겨둬) */
+  releaseAll() {
     for (const pl of this.players) {
       for (const a of ACTIONS) { pl.held[a] = false; pl.pressed[a] = false; }
     }
     for (const key in this.lastPadState) {
       if (!key.endsWith('-select')) this.lastPadState[key] = false;
     }
-
-    savePadOwner(this.padOwner);
-    if (this.onOwnerChange) this.onOwnerChange(slot, player);
   }
 
   /* SELECT 를 누를 때마다 다음 친구로 (다영 → 태준 → 세은 → 다영 …) */
