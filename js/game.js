@@ -510,6 +510,41 @@ function clearStage() {
   startFireworks();
 }
 
+/* -----------------------------------------------------------
+   🔁 다시하기 (LT 버튼)
+
+   학생들이 정한 규칙: "지금 스테이지의 첫 번째 방부터 다시!"
+   예) 폐교 교무실에서 누르면 → 폐교 1학년 교실부터
+       (비행기 처음으로 돌아가지 않아!)
+   ----------------------------------------------------------- */
+function restartStage() {
+  game.sectionIndex = 0;                 // 이 스테이지의 첫 번째 방으로
+  game.startTime = performance.now();    // 시계도 0초부터 다시
+  game.elapsed = 0;
+  game.paused = false;
+
+  // 이 스테이지에서 모은 단서도 처음부터 다시 찾아야 해
+  game.clues = [];
+  updateClueBook();
+  closeLock();
+  for (const sec of currentStage().sections) {
+    (sec.objects || []).forEach(o => o.taken = false);
+  }
+
+  // ⭐ 별은 그대로! (앞 스테이지에서 받은 별은 안 없어져)
+
+  loadSection();
+  sound.select();
+  showToast('🔁 ' + currentStage().name + ' 처음부터 다시!');
+}
+
+
+/* 세 친구 중 누구든 이 버튼을 '방금' 눌렀나? */
+function anyonePressed(action) {
+  return input.players.some(pad => pad.isPressed(action));
+}
+
+
 /* 다음 스테이지로 넘어가기 */
 function nextStage() {
   game.stageIndex++;
@@ -1203,15 +1238,17 @@ function loop(now) {
     document.getElementById('timeCount').textContent = game.elapsed.toFixed(1);
     document.getElementById('starCount').textContent = game.stars;
 
-    // 정지·다시하기 버튼 확인
-    if (input.players[0].isPressed('pause'))    togglePause();
-    if (input.players[0].isPressed('restart'))  startGame();
-    if (input.players[0].isPressed('settings')) openOverlay();
+    // 정지·다시하기·설정 버튼 확인
+    // ⚠️ 예전엔 1번 조종기(세은)만 확인했어.
+    //    이제는 세 친구 중 '누가 눌러도' 작동해!
+    if (anyonePressed('pause'))    togglePause();
+    if (anyonePressed('restart'))  restartStage();
+    if (anyonePressed('settings')) openOverlay();
   }
 
   // 정지 중에도 조종기로 다시 시작할 수 있게
   else if (game.paused) {
-    if (input.players[0].isPressed('pause')) togglePause();
+    if (anyonePressed('pause')) togglePause();
   }
 
   input.endFrame();              // '막 눌림' 표시 지우기
@@ -1419,7 +1456,7 @@ function buildGuides() {
     ['A / ✕ (꾹)', '달리기'],
     ['B / ○',    '설정'],
     ['RT / R2',  '정지'],
-    ['LT / L2',  '다시하기']
+    ['LT / L2',  '다시하기 (이 스테이지 처음부터)']
   ];
   document.getElementById('padGuide').innerHTML = padRows.map(
     r => '<div class="key-item"><span class="keycap">' + r[0] + '</span>' + r[1] + '</div>'
@@ -1435,7 +1472,7 @@ function buildGuides() {
     ['H / U',        '🔴 태준 점프 / 상호작용'],
     ['Shift (꾹)',   '달리기'],
     ['P / Esc',      '정지'],
-    ['R',            '다시하기']
+    ['R',            '다시하기 (이 스테이지 처음부터)']
   ];
   document.getElementById('keyGuide').innerHTML = keyRows.map(
     r => '<div class="key-item"><span class="keycap">' + r[0] + '</span>' + r[1] + '</div>'
