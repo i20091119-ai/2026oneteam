@@ -1565,7 +1565,7 @@ function updatePlayerBar() {
         '<div class="who">' +
           '<span class="dot"></span>' +
           '<b>' + hero.name + '</b>' +
-          '<span class="src">' + (hasPad ? '🕹️ 조이스틱 ' + (i + 1) + '번 연결됨' : '⌨️ 키보드로 하는 중') + '</span>' +
+          '<span class="src">' + (hasPad ? '🕹️ 조이스틱 ' + (pi.padSlot + 1) + '번 연결됨' : '⌨️ 키보드로 하는 중') + '</span>' +
         '</div>' +
         keyboardRow + joystickRow +
       '</div>';
@@ -1589,6 +1589,46 @@ function updatePlayerBar() {
   // 똑같으면 다시 그리지 않아 (1초마다 불리니까 깜빡이지 않게)
   if (bar.innerHTML !== html) bar.innerHTML = html;
 }
+/* -----------------------------------------------------------
+   🕹️ 설정 창: 누가 조이스틱을 쓸지 고르는 버튼
+   ----------------------------------------------------------- */
+function renderPadAssign() {
+  const box = document.getElementById('padAssign');
+  if (!box) return;
+  let html = '';
+  for (let slot = 0; slot < 3; slot++) {
+    const connected = !!input.padIds[slot];
+    html += '<div class="assign-row">' +
+      '<span class="assign-name">🕹️ 조이스틱 ' + (slot + 1) + '번 ' +
+        (connected ? '<em class="ok">연결됨</em>' : '<em>안 꽂힘</em>') + '</span>';
+    HEROES.forEach((hero, p) => {
+      const on = input.padOwner[slot] === p;
+      html += '<button class="assign-btn' + (on ? ' on' : '') + '" data-slot="' + slot + '" data-p="' + p + '"' +
+              ' style="--hero:' + hero.color + ';--hero-dark:' + hero.dark + '">' + hero.name + '</button>';
+    });
+    html += '</div>';
+  }
+  box.innerHTML = html;
+  box.querySelectorAll('.assign-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      input.setPadOwner(Number(btn.dataset.slot), Number(btn.dataset.p));
+    });
+  });
+}
+
+// 배정이 바뀌면: 소리 + 알림 + 화면 새로 그리기
+input.onOwnerChange = (slot, p) => {
+  sound.swap();
+  showToast('🕹️ 조이스틱 ' + (slot + 1) + '번 → ' + HEROES[p].emoji + ' ' + HEROES[p].name);
+  updatePlayerBar();
+  renderPadAssign();
+};
+
+// 설정 창을 열 때마다 최신 배정을 보여줘
+document.getElementById('helpBtn').addEventListener('click', renderPadAssign);
+document.getElementById('settingsBtn').addEventListener('click', renderPadAssign);
+setInterval(() => { if (overlay.classList.contains('active')) renderPadAssign(); }, 1000);
+
 // 조종기를 꽂거나 뺄 때마다 막대를 새로 그려줘
 window.addEventListener('gamepadconnected', updatePlayerBar);
 window.addEventListener('gamepaddisconnected', updatePlayerBar);

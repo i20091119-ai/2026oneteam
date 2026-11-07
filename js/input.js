@@ -137,6 +137,13 @@ class InputManager {
     }
 
     this.padIds = [];      // 연결된 조종기 이름들 (화면에 보여주려고)
+
+    // 🕹️ 조이스틱 몇 번이 어떤 친구를 조종하나
+    //    padOwner[조이스틱 번호] = 친구 번호 (0=세은, 1=다영, 2=태준)
+    //    학생들 요청: 조이스틱을 하나 꽂으면 '다영'이가 움직이게!
+    //    → 조이스틱 1번 = 다영, 2번 = 세은, 3번 = 태준
+    this.padOwner = loadPadOwner() || [1, 0, 2];
+    this.onOwnerChange = null;   // 배정이 바뀌면 게임에 알려줄 약속
     this.lastPadState = {}; // 조종기 버튼이 '방금 눌렸는지' 알아내려고 이전 상태를 기억
 
     this._listenKeyboard();
@@ -218,16 +225,26 @@ class InputManager {
       if (pad) livePads.push(pad);
     }
 
-    // 조종기를 순서대로 세은 → 다영 → 태준에게 나눠줘
-    // 조종기가 2대면 세은·다영이 쓰고, 태준이는 키보드를 쓰면 돼!
-    for (let i = 0; i < this.players.length; i++) {
-      this.players[i].padIndex = livePads[i] ? livePads[i].index : null;
-    }
+    // 배정표(padOwner)대로 조이스틱을 친구들에게 나눠줘
+    // 조이스틱이 없는 친구는 키보드를 쓰면 돼!
+    for (const pl of this.players) { pl.padIndex = null; pl.padSlot = null; }
 
     livePads.forEach((pad, slot) => {
       if (slot >= this.players.length) return;   // 조종기가 사람보다 많으면 남는 건 무시
-      const player = this.players[slot];
+      const player = this.players[this.padOwner[slot]];
+      player.padIndex = pad.index;
+      player.padSlot = slot;                      // 몇 번째 조이스틱인지 (0부터)
       this.padIds[slot] = pad.id;
+
+      // --- SELECT 버튼(8번) → 이 조이스틱으로 조종할 친구 바꾸기 ---
+      const sel = !!(pad.buttons[8] && pad.buttons[8].pressed);
+      const selKey = slot + '-select';
+      if (sel && !this.lastPadState[selKey]) {
+        this.lastPadState[selKey] = true;
+        this.cyclePad(slot);
+        return;                                   // 이번 장면은 여기까지!
+      }
+      this.lastPadState[selKey] = sel;
 
       // --- 버튼 확인 ---
       pad.buttons.forEach((btn, num) => {
@@ -273,6 +290,34 @@ class InputManager {
     this.lastPadState[key] = isDown;
   }
 
+  /* -----------------------------------------------------------
+     🕹️ 조이스틱 배정 바꾸기
+     slot 번째 조이스틱이 player 번 친구를 조종하게 해.
+     그 친구를 이미 다른 조이스틱이 조종하고 있으면 서로 바꿔줘!
+     ----------------------------------------------------------- */
+  setPadOwner(slot, player) {
+    const other = this.padOwner.indexOf(player);
+    if (other === slot) return;
+    if (other >= 0) this.padOwner[other] = this.padOwner[slot];   // 자리 바꾸기
+    this.padOwner[slot] = player;
+
+    // 바뀌는 순간 누르고 있던 버튼이 '눌린 채로' 남지 않게 모두 떼어줘
+    for (const pl of this.players) {
+      for (const a of ACTIONS) { pl.held[a] = false; pl.pressed[a] = false; }
+    }
+    for (const key in this.lastPadState) {
+      if (!key.endsWith('-select')) this.lastPadState[key] = false;
+    }
+
+    savePadOwner(this.padOwner);
+    if (this.onOwnerChange) this.onOwnerChange(slot, player);
+  }
+
+  /* SELECT 를 누를 때마다 다음 친구로 (다영 → 태준 → 세은 → 다영 …) */
+  cyclePad(slot) {
+    this.setPadOwner(slot, (this.padOwner[slot] + 1) % this.players.length);
+  }
+
   /* 한 장면이 끝날 때마다 '막 눌림' 표시를 지워줘 */
   endFrame() {
     for (const p of this.players) p.clearPressed();
@@ -282,4 +327,22 @@ class InputManager {
   connectedPadCount() {
     return this.players.filter(p => p.padIndex !== null).length;
   }
+}
+
+
+/* -----------------------------------------------------------
+   🕹️ 조이스틱 배정을 브라우저에 기억해 두기
+   새로고침해도 '조이스틱 1번 = 다영' 같은 설정이 그대로 남아.
+   (기억하는 기능이 막혀 있는 브라우저도 있어서 try 로 감싸 둬)
+   ----------------------------------------------------------- */
+function loadPadOwner() {
+  try {
+    const v = JSON.parse(localStorage.getItem('padOwner'));
+    if (Array.isArray(v) && v.length === 3 && [0, 1, 2].every(n => v.includes(n))) return v;
+  } catch (e) { /* 기억이 없으면 기본값을 써 */ }
+  return null;
+}
+
+function savePadOwner(v) {
+  try { localStorage.setItem('padOwner', JSON.stringify(v)); } catch (e) { /* 못 기억해도 괜찮아 */ }
 }
