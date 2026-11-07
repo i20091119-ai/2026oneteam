@@ -48,23 +48,16 @@ const PAD_BUTTONS = {
 
 
 /* -----------------------------------------------------------
-   ②-2 조이스틱 스위치가 DINPUT/PS3 쪽일 때의 버튼 번호
+   ②-2 처음 보는 DINPUT 조이스틱 (맥에서 흔해!)
 
-   XINPUT 모드면 브라우저가 '표준 배치'로 알려줘서 위 표를 쓰면 돼.
-   그런데 맥(Mac)이나 리눅스(우노Q)에서는 XINPUT 조이스틱을
-   못 알아보는 경우가 있어! 그럴 땐 스위치를 DINPUT/PS3 로 바꾸면
-   알아보는데, 버튼 번호가 이렇게 달라져.
+   DINPUT 은 조이스틱 회사마다 버튼 번호가 제각각이라
+   "X가 몇 번인지" 미리 알 수가 없어.
+   그래서 아무 버튼이나 눌러도 '조사 + 콩 뛰기'가 되게 했어.
+   (우리 게임은 방을 위에서 보는 게임이라 둘 다 같이 돼도 괜찮아!)
+   정지·다시하기·설정은 실수로 눌리면 곤란하니까 키보드(P·R·O)로 해.
+   점검기에서 '버튼 맞추기'를 하면 버튼마다 정확한 역할이 생겨.
    ----------------------------------------------------------- */
-const PAD_BUTTONS_DINPUT = {
-  0: 'jump',      // ☐ (X/☐ 자리)  점프
-  1: 'run',       // ✕ (A/X 자리)  달리기
-  2: 'settings',  // ○ (B/○ 자리)  설정
-  3: 'interact',  // △ (Y/△ 자리)  상호작용
-  4: 'item',      // L1            아이템
-  5: 'crouch',    // R1            웅크리기
-  6: 'restart',   // L2            다시하기
-  7: 'pause'      // R2            정지
-};
+const ANY_BUTTON = ['interact', 'jump'];
 
 
 /* -----------------------------------------------------------
@@ -263,7 +256,7 @@ class InputManager {
 
     // 배정표(padOwner)대로 조이스틱을 친구들에게 나눠줘
     // 조이스틱이 없는 친구는 키보드를 쓰면 돼!
-    for (const pl of this.players) { pl.padIndex = null; pl.padSlot = null; }
+    for (const pl of this.players) { pl.padIndex = null; pl.padSlot = null; pl.padKind = null; }
 
     livePads.forEach((pad, slot) => {
       if (slot >= this.players.length) return;   // 조종기가 사람보다 많으면 남는 건 무시
@@ -274,9 +267,13 @@ class InputManager {
 
       // 🎯 이 조이스틱용으로 맞춘 번호표가 있으면 그걸 써
       const custom = this.padMaps[pad.id];
+      // 처음 보는 DINPUT 조이스틱인가? (표준도 아니고 맞춘 번호표도 없음)
+      const unknown = pad.mapping !== 'standard' && !custom;
 
       // --- SELECT 버튼(보통 8번) → 이 조이스틱으로 조종할 친구 바꾸기 ---
-      const selNum = custom && custom.select !== undefined ? custom.select : 8;
+      //     처음 보는 조이스틱은 SELECT가 몇 번인지 몰라서 꺼둬
+      const selNum = custom && custom.select !== undefined ? custom.select : unknown ? -1 : 8;
+      player.padKind = unknown ? 'any' : custom ? 'custom' : 'standard';   // 화면 안내용
       const sel = !!(pad.buttons[selNum] && pad.buttons[selNum].pressed);
       const selKey = slot + '-select';
       if (sel && !this.lastPadState[selKey]) {
@@ -290,19 +287,22 @@ class InputManager {
       // XINPUT 이면 표준 배치, DINPUT 이면 PS3 배치 표를 써
       //   (점검기에서 버튼을 맞췄다면 그 번호표가 1등!)
       const table = custom ? custom.buttons
-                  : pad.mapping === 'standard' ? PAD_BUTTONS : PAD_BUTTONS_DINPUT;
+                  : pad.mapping === 'standard' ? PAD_BUTTONS : null;
       pad.buttons.forEach((btn, num) => {
-        const action = table[num];
-        if (!action) return;
+        // 처음 보는 조이스틱이면 (D-pad 자리인 12번부터 빼고) 모든 버튼이 '조사 + 콩'
+        const actions = table ? [table[num]] : (num < 12 ? ANY_BUTTON : []);
+        if (!actions[0]) return;
 
         const key = slot + '-' + num;             // 예: "0-2" = 1번 조종기의 2번 버튼
         const wasDown = this.lastPadState[key];   // 아까는 눌려 있었나?
         const isDown = btn.pressed;               // 지금은 눌려 있나?
 
-        // 방금 막 눌렸다면 → setDown
-        if (isDown && !wasDown) player.setDown(action);
-        // 방금 손을 뗐다면 → setUp
-        if (!isDown && wasDown) player.setUp(action);
+        for (const action of actions) {
+          // 방금 막 눌렸다면 → setDown
+          if (isDown && !wasDown) player.setDown(action);
+          // 방금 손을 뗐다면 → setUp
+          if (!isDown && wasDown) player.setUp(action);
+        }
 
         this.lastPadState[key] = isDown;          // 지금 상태를 기억해 둬
       });
@@ -318,10 +318,11 @@ class InputManager {
 
       // DINPUT 모드 + 스틱 스위치 DP 이면, 방향이 '햇 스위치'라는
       // 특별한 숫자 하나로 와. 그것도 읽어줘!
-      const hat = readHat(pad);
+      const hat = readHat(pad, this._hatAxis(pad));
 
       // 표준 배치의 십자패드 버튼(12~15번)
-      const dp = (n) => pad.mapping === 'standard' && !!(pad.buttons[n] && pad.buttons[n].pressed);
+      const dp = (n) => (pad.mapping === 'standard' || pad.buttons.length > 15) &&
+                        !!(pad.buttons[n] && pad.buttons[n].pressed);
 
       // 스틱 · 십자패드 · 햇 중 '하나라도' 그쪽이면 그 방향!
       this._stick(player, slot, 'left',  x < -DEAD || hat.left  || dp(14));
@@ -329,6 +330,15 @@ class InputManager {
       this._stick(player, slot, 'up',    y < -DEAD || hat.up    || dp(12));
       this._stick(player, slot, 'down',  y >  DEAD || hat.down  || dp(13));
     });
+  }
+
+  /* 🧭 햇(십자 방향)이 몇 번 축으로 오는지 스스로 찾아내기
+     햇은 아무것도 안 누르면 1보다 큰 숫자(약 1.29)가 나와서 알아볼 수 있어.
+     윈도우·맥 크롬은 보통 9번이지만, 다른 번호일 때도 찾아내! */
+  _hatAxis(pad) {
+    this.hatAxes = this.hatAxes || {};
+    pad.axes.forEach((v, i) => { if (v > 1.05 && i >= 2) this.hatAxes[pad.id] = i; });
+    return this.hatAxes[pad.id] !== undefined ? this.hatAxes[pad.id] : 9;
   }
 
   /* 스틱 방향도 버튼처럼 '방금 눌렸는지' 알아내는 도우미 */
@@ -423,10 +433,10 @@ function loadPadMaps() {
      0.14 = 아래, 0.43 = 왼쪽아래, 0.71 = 왼쪽, 1 = 왼쪽위
      아무것도 안 누르면 1보다 큰 숫자(약 1.29)
    ----------------------------------------------------------- */
-function readHat(pad) {
+function readHat(pad, axis = 9) {
   const none = { up: false, down: false, left: false, right: false };
   if (pad.mapping === 'standard') return none;    // 표준 배치는 12~15번 버튼으로 와
-  const v = pad.axes[9];
+  const v = pad.axes[axis];
   if (v === undefined || v > 1.05 || v < -1.05) return none;
 
   // 8방향 중 몇 번째인지 (0=위부터 시계 방향)

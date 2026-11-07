@@ -9,7 +9,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>🕹️ 조종기 점검기</title>
-  <link rel="stylesheet" href="css/style.css?v=1107e">
+  <link rel="stylesheet" href="css/style.css?v=1107f">
   <style>
     body { align-items: flex-start; }
     .card { max-width: 920px; text-align: left; padding: 28px 28px 24px; }
@@ -140,7 +140,7 @@
     <button class="btn small" id="resetBtn">🧹 지우고 다시</button>
     <a class="btn small" href="index.html">🎮 게임으로</a>
   </div>
-  <p class="ver">점검기 버전 2026-11-07e · 이 화면을 사진 찍어서 보내주면 원인을 같이 찾을 수 있어요 📸</p>
+  <p class="ver">점검기 버전 2026-11-07f · 이 화면을 사진 찍어서 보내주면 원인을 같이 찾을 수 있어요 📸</p>
 </main>
 
 <script>
@@ -275,8 +275,8 @@ function drawVerdict(pads) {
            '아래 칸에서 <b>버튼을 누르면 노랗게</b>, <b>스틱을 밀면 분홍색</b>으로 켜지는지 봐주세요.' +
            '<ol>' +
            '<li>조이스틱 1번은 <b>' + (NAMES[owner[0]] || '') + '</b>이(가) 조종해요. 바꾸려면 조이스틱 위 <b>SELECT</b>!</li>' +
-           (std ? '' : '<li>지금은 <b>DINPUT 모드</b>예요. 스틱이 안 움직이면 스틱 스위치를 <b>LS</b>로 바꿔 보세요.</li>') +
-           (std || pads.every(p => padMaps[p.id]) ? '' : '<li>버튼이 엉뚱하게 움직이면 아래 <b>🎯 버튼 맞추기</b>를 해주세요!</li>') +
+           (std ? '' : '<li>지금은 <b>DINPUT 모드</b>예요. 게임에서 <b>아무 버튼이나 누르면 조사</b>가 돼요! 스틱이 안 움직이면 스틱 스위치를 <b>LS</b>로 바꿔 보세요.</li>') +
+           (std || pads.every(p => padMaps[p.id]) ? '' : '<li>(선택) 버튼마다 역할을 정하고 싶으면 아래 <b>🎯 버튼 맞추기</b>를 하세요.</li>') +
            '<li>여기서는 되는데 게임에서 안 되면 → 게임 화면에서 <b>Ctrl + Shift + R</b> (맥은 <b>Cmd + Shift + R</b>) 로 새로고침!</li>' +
            '</ol>';
   } else if (keyboardHit) {

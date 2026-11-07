@@ -1579,6 +1579,9 @@ function cap(text) {
   return '<kbd class="cap">' + text + '</kbd>';
 }
 
+// 🍎 맥(Mac)인지 — 맥은 XINPUT 조이스틱을 못 알아봐서 따로 안내해 줘야 해
+const IS_MAC = /Mac OS X|Macintosh/.test(navigator.userAgent);
+
 function updatePlayerBar() {
   const bar = document.getElementById('playerBar');
   let html = '';
@@ -1598,21 +1601,32 @@ function updatePlayerBar() {
         '<span class="lab">조사</span>' + cap(k.act) +
       '</div>';
 
+    // 처음 보는 DINPUT 조이스틱이면 '아무 버튼 = 조사'라고 알려줘
+    const anyBtn = hasPad && pi.padKind === 'any';
     const joystickRow =
       '<div class="keys' + (hasPad ? ' on' : '') + '">' +
         '<span class="dev">🕹️</span>' +
         '<span class="lab">이동</span>' + cap('스틱') +
-        '<span class="lab">점프</span>' + cap('X') +
-        '<span class="lab">조사</span>' + cap('Y') +
-        '<span class="lab">달리기</span>' + cap('A꾹') +
+        (anyBtn
+          ? '<span class="lab">조사</span>' + cap('아무 버튼')
+          : '<span class="lab">점프</span>' + cap('X') +
+            '<span class="lab">조사</span>' + cap('Y') +
+            '<span class="lab">달리기</span>' + cap('A꾹')) +
       '</div>';
+
+    // 조이스틱을 못 찾았을 때, 조이스틱 1번 주인 칸에 해결 방법을 보여줘
+    let src = hasPad ? '🕹️ 조이스틱 ' + (pi.padSlot + 1) + '번 연결됨' : '⌨️ 키보드로 하는 중';
+    if (!hasPad && input.connectedPadCount() === 0 && input.padOwner[0] === i) {
+      src = IS_MAC ? '🕹️ 못 찾음 → 스위치 <b>DINPUT/PS3</b> + USB 다시 꽂기'
+                   : '🕹️ 못 찾음 → 조이스틱 버튼 한 번 누르기';
+    }
 
     html +=
       '<div class="pcard' + (hasPad ? ' pad' : '') + '" style="--hero:' + hero.color + ';--hero-dark:' + hero.dark + '">' +
         '<div class="who">' +
           '<span class="dot"></span>' +
           '<b>' + hero.name + '</b>' +
-          '<span class="src">' + (hasPad ? '🕹️ 조이스틱 ' + (pi.padSlot + 1) + '번 연결됨' : '⌨️ 키보드로 하는 중') + '</span>' +
+          '<span class="src">' + src + '</span>' +
         '</div>' +
         keyboardRow + joystickRow +
       '</div>';
