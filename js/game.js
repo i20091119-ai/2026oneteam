@@ -527,7 +527,9 @@ function clearStage() {
     hasNext ? stage.name + ' 클리어!' : '탈출 성공!';
   document.getElementById('clearStars').textContent = '⭐'.repeat(earned);
   document.getElementById('clearTime').textContent =
-    '걸린 시간 ' + game.elapsed.toFixed(1) + '초  ·  모은 별 ' + game.stars + '개';
+    '⏱ 걸린 시간 ' + formatTime(game.elapsed, true) +
+    '  ·  ⭐⭐ 기준 ' + formatTime(limit) +
+    '  ·  모은 별 ' + game.stars + '개';
   document.getElementById('clearSub').textContent =
     earned === 2 ? '시간 안에 해냈어요! 최고예요! 🏆' : '함께 힘을 모아 해냈어요!';
 
@@ -580,6 +582,20 @@ function clockRunning() {
   if (overlay.classList.contains('active')) return false;      // ⚙️ 설정 창 → 멈춤
   if (game.lockOpen) return true;                              // 🔒 비밀번호 창 → 흘러감
   return !game.paused;                                         // ⏸ 정지 → 멈춤
+}
+
+
+/* -----------------------------------------------------------
+   ⏱ 시간을 보기 좋게 바꿔주는 도우미
+     75    → '1분 15초'
+     45    → '45초'
+     252.3 → '4분 12초'  (자세히: '4분 12.3초')
+   ----------------------------------------------------------- */
+function formatTime(sec, detail = false) {
+  const m = Math.floor(sec / 60);
+  const s = sec - m * 60;
+  const sText = detail ? s.toFixed(1) : String(Math.floor(s));
+  return m > 0 ? m + '분 ' + sText + '초' : sText + '초';
 }
 
 
@@ -1327,7 +1343,12 @@ function loop(now) {
   // ⏱ 시계 — 돌아가야 할 때만 시간을 더해줘
   if (clockRunning()) game.elapsed += dt / 1000;
   if (game.screen === 'game') {
-    document.getElementById('timeCount').textContent = game.elapsed.toFixed(1);
+    document.getElementById('timeCount').textContent = formatTime(game.elapsed);
+
+    // ⭐⭐ 기준 시간을 넘기면 시계가 회색으로 바뀌어 (별 2개는 놓쳤다는 뜻!)
+    const goal = currentStage().timeLimit || 60;
+    document.getElementById('timeGoal').textContent = '/ ⭐⭐ ' + formatTime(goal);
+    document.getElementById('timerBox').classList.toggle('late', game.elapsed > goal);
     document.getElementById('starCount').textContent = game.stars;
   }
 

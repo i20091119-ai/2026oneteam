@@ -738,3 +738,15 @@
   font-size: 11px;
   font-weight: 800;
 }
+
+
+/* ==================== ⏱ 시계 ==================== */
+/* 시계 옆의 '⭐⭐ 기준 시간' 은 작고 흐리게 */
+.timer small {
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--ink-soft);
+}
+/* 기준 시간을 넘기면 시계가 회색으로 (별 2개는 놓쳤다는 뜻) */
+.timer.late b { color: #a39bb0; }
+.timer.late small { text-decoration: line-through; }
