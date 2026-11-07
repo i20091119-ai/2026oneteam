@@ -916,6 +916,14 @@ function drawWindows(theme, sec) {
     ctx.restore();
 
     // ④ 창틀
+    // 🎨 우리가 그린 창문이 있으면 창틀 대신 그 그림을 올려
+    //    (유리 부분을 투명하게 비워 두면 뒤로 구름이 지나가는 게 보여!)
+    const winArt = sec && currentStage().art && skin('window-' + currentStage().art + '.png');
+    if (winArt) {
+      const bw = square ? R * 2.7 : R * 2.35, bh = square ? R * 2.0 : R * 2.35;
+      drawSkinFit(ctx, winArt, cx - bw / 2, cy - bh / 2, bw, bh);
+      continue;
+    }
     ctx.save();
     ctx.lineWidth   = 5;
     ctx.strokeStyle = theme.edge;

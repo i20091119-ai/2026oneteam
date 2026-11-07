@@ -25,6 +25,9 @@
 | 방마다 바닥 (선택) | `floor-plane-1.png` ~ `floor-plane-3.png`, `floor-school-1.png` ~ `floor-school-3.png` | 960×540 |
 | 🚪 출구 문 | `door-exit.png` | 120×180 |
 | 🔒 금고 자물쇠 | `lock.png` | 180×200 |
+| ✈️ 비행기 창문 (동그란 창) | `window-plane.png` | 120×120 · 유리 자리는 **투명하게** 비워두면 뒤로 구름이 흘러가요 |
+| 🏫 교실 창문 (네모난 창) | `window-school.png` | 138×102 · 유리 자리는 **투명하게** |
+| 🧑 좌석에 앉은 승객 | `passenger.png` | 120×120 |
 | 🪑 가구 (위에서 본 모습) | `furniture-seat.png`, `furniture-desk.png`, `furniture-chair.png`, `furniture-locker.png`, `furniture-cabinet.png`, `furniture-board.png`, `furniture-books.png`, `furniture-plant.png`, `furniture-trash.png`, `furniture-box.png`, `furniture-bag.png`, `furniture-cup.png`, `furniture-cart.png`, `furniture-panel.png`, `furniture-clock.png` | 확인판에 적혀 있어요 |
 
 > 바닥 그림 위에 **벽은 게임이 따로 그려요** (부딪히는 곳이라서). 바닥 그림에는 벽을 안 그려도 돼요.
