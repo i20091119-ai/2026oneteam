@@ -48,6 +48,26 @@ const PAD_BUTTONS = {
 
 
 /* -----------------------------------------------------------
+   ②-2 조이스틱 스위치가 DINPUT/PS3 쪽일 때의 버튼 번호
+
+   XINPUT 모드면 브라우저가 '표준 배치'로 알려줘서 위 표를 쓰면 돼.
+   그런데 맥(Mac)이나 리눅스(우노Q)에서는 XINPUT 조이스틱을
+   못 알아보는 경우가 있어! 그럴 땐 스위치를 DINPUT/PS3 로 바꾸면
+   알아보는데, 버튼 번호가 이렇게 달라져.
+   ----------------------------------------------------------- */
+const PAD_BUTTONS_DINPUT = {
+  0: 'jump',      // ☐ (X/☐ 자리)  점프
+  1: 'run',       // ✕ (A/X 자리)  달리기
+  2: 'settings',  // ○ (B/○ 자리)  설정
+  3: 'interact',  // △ (Y/△ 자리)  상호작용
+  4: 'item',      // L1            아이템
+  5: 'crouch',    // R1            웅크리기
+  6: 'restart',   // L2            다시하기
+  7: 'pause'      // R2            정지
+};
+
+
+/* -----------------------------------------------------------
    ③ 키보드 이름표 — 세 친구가 각자 다른 키를 써!
 
    조종기가 모자라거나, 컴퓨터에서 테스트할 때 쓰는 키야.
@@ -247,8 +267,10 @@ class InputManager {
       this.lastPadState[selKey] = sel;
 
       // --- 버튼 확인 ---
+      // XINPUT 이면 표준 배치, DINPUT 이면 PS3 배치 표를 써
+      const table = pad.mapping === 'standard' ? PAD_BUTTONS : PAD_BUTTONS_DINPUT;
       pad.buttons.forEach((btn, num) => {
-        const action = PAD_BUTTONS[num];
+        const action = table[num];
         if (!action) return;
 
         const key = slot + '-' + num;             // 예: "0-2" = 1번 조종기의 2번 버튼
@@ -272,10 +294,14 @@ class InputManager {
       const x = pad.axes[0] || 0;
       const y = pad.axes[1] || 0;
 
-      this._stick(player, slot, 'left',  x < -DEAD);
-      this._stick(player, slot, 'right', x >  DEAD);
-      this._stick(player, slot, 'up',    y < -DEAD);
-      this._stick(player, slot, 'down',  y >  DEAD);
+      // DINPUT 모드 + 스틱 스위치 DP 이면, 방향이 '햇 스위치'라는
+      // 특별한 숫자 하나로 와. 그것도 읽어줘!
+      const hat = readHat(pad);
+
+      this._stick(player, slot, 'left',  x < -DEAD || hat.left);
+      this._stick(player, slot, 'right', x >  DEAD || hat.right);
+      this._stick(player, slot, 'up',    y < -DEAD || hat.up);
+      this._stick(player, slot, 'down',  y >  DEAD || hat.down);
     });
   }
 
@@ -345,4 +371,29 @@ function loadPadOwner() {
 
 function savePadOwner(v) {
   try { localStorage.setItem('padOwner', JSON.stringify(v)); } catch (e) { /* 못 기억해도 괜찮아 */ }
+}
+
+
+/* -----------------------------------------------------------
+   🧭 햇 스위치(십자 방향) 읽기 — DINPUT 모드에서만 쓰여
+
+   윈도우 크롬에서는 9번 축(axes[9])에 숫자 하나로 와:
+     -1 = 위, -0.71 = 오른쪽위, -0.43 = 오른쪽, -0.14 = 오른쪽아래,
+     0.14 = 아래, 0.43 = 왼쪽아래, 0.71 = 왼쪽, 1 = 왼쪽위
+     아무것도 안 누르면 1보다 큰 숫자(약 1.29)
+   ----------------------------------------------------------- */
+function readHat(pad) {
+  const none = { up: false, down: false, left: false, right: false };
+  if (pad.mapping === 'standard') return none;    // 표준 배치는 12~15번 버튼으로 와
+  const v = pad.axes[9];
+  if (v === undefined || v > 1.05 || v < -1.05) return none;
+
+  // 8방향 중 몇 번째인지 (0=위부터 시계 방향)
+  const dir = Math.round((v + 1) * 3.5) % 8;
+  return {
+    up:    dir === 7 || dir === 0 || dir === 1,
+    right: dir === 1 || dir === 2 || dir === 3,
+    down:  dir === 3 || dir === 4 || dir === 5,
+    left:  dir === 5 || dir === 6 || dir === 7
+  };
 }

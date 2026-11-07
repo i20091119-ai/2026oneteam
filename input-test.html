@@ -1,300 +1,293 @@
 <!DOCTYPE html>
 <!-- ===========================================================
-     조종기 점검기 🕹️
-     아케이드 조종기를 꽂고 스틱과 버튼을 눌러보면
-     컴퓨터가 그걸 '무엇으로' 알아들었는지 보여주는 도구야.
+     🕹️ 조종기 점검기
+     조이스틱이 안 될 때, 왜 안 되는지 스스로 알려주는 화면이야.
+     맨 위의 큰 칸이 "지금 무엇이 문제인지"와 "어떻게 하면 되는지"를 알려줘!
      =========================================================== -->
 <html lang="ko">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>🕹️ 조종기 점검기</title>
-  <link rel="stylesheet" href="css/style.css">
+  <link rel="stylesheet" href="css/style.css?v=1107c">
   <style>
-    /* 이 페이지에서만 쓰는 옷 입히기 */
     body { align-items: flex-start; }
-    .card { max-width: 860px; text-align: left; }
-    h1 { text-align: center; }
-    .sub { text-align: center; }
+    .card { max-width: 920px; text-align: left; padding: 28px 28px 24px; }
+    h1 { text-align: center; margin: 0 0 4px; }
+    .sub { text-align: center; margin: 0 0 18px; }
 
-    /* 두 칸으로 나란히 놓기 (키보드 / 게임패드) */
-    .panels {
-      display: grid;
-      grid-template-columns: 1fr 1fr;
-      gap: 16px;
-    }
-    /* 화면이 좁으면 한 줄씩 세로로 쌓기 */
-    @media (max-width: 700px) {
-      .panels { grid-template-columns: 1fr; }
-    }
-
-    .panel {
-      background: #faf8ff;
-      border: 3px solid #efe9ff;
+    /* ---- 결론 칸: 초록(잘 됨) / 노랑(조금 더) / 빨강(안 됨) ---- */
+    .verdict {
       border-radius: 20px;
-      padding: 18px;
+      padding: 18px 22px;
+      margin-bottom: 16px;
+      font-size: 17px;
+      line-height: 1.6;
+      box-shadow: inset 0 0 0 3px rgba(0,0,0,.06);
     }
-    .panel h2 { margin: 0 0 4px; font-size: 18px; }
-    .panel .tip { margin: 0 0 12px; font-size: 13px; color: var(--ink-soft); }
+    .verdict h2 { margin: 0 0 6px; font-size: 22px; }
+    .verdict ol { margin: 6px 0 0; padding-left: 22px; }
+    .verdict li { margin: 4px 0; }
+    .verdict.ok   { background: #e3f7e8; color: #245a33; }
+    .verdict.wait { background: #fff4cf; color: #6b5210; }
+    .verdict.bad  { background: #ffe1e1; color: #7a2020; }
+    .verdict b { font-weight: 900; }
 
-    /* 방금 누른 것을 크게 보여주는 자리 */
-    .now {
-      background: #fff;
-      border-radius: 16px;
-      padding: 16px;
-      text-align: center;
-      min-height: 84px;
-      display: flex;
-      flex-direction: column;
-      justify-content: center;
-      box-shadow: inset 0 0 0 2px #f0ecfa;
-    }
-    .now .code { font-size: 26px; font-weight: 800; word-break: break-all; }
-    .now .label { font-size: 12px; color: var(--ink-soft); }
-
-    /* 지금까지 누른 것을 모아두는 목록 */
-    .list {
-      margin-top: 12px;
-      display: flex;
-      flex-wrap: wrap;
-      gap: 8px;
-      min-height: 40px;
-    }
-    .chip {
-      background: var(--mint);
-      color: #2f6b55;
-      border-radius: 999px;
-      padding: 6px 14px;
-      font-size: 14px;
-      font-weight: 700;
-      /* 새로 생길 때 뿅! 하고 커지는 효과 */
-      animation: pop .25s ease-out;
-    }
-    .chip.key { background: var(--lemon); color: #7a5c1e; }
-    @keyframes pop {
-      from { transform: scale(.4); opacity: 0; }
-      to   { transform: scale(1);  opacity: 1; }
-    }
-
-    /* 스틱이 어느 쪽으로 기울었는지 보여주는 십자 그림 */
-    .stick {
+    /* ---- 정보 네모들 ---- */
+    .facts {
       display: grid;
-      grid-template-columns: repeat(3, 44px);
-      grid-template-rows: repeat(3, 44px);
-      gap: 6px;
-      justify-content: center;
-      margin-top: 12px;
+      grid-template-columns: repeat(auto-fit, minmax(190px, 1fr));
+      gap: 8px;
+      margin-bottom: 16px;
     }
-    .stick div {
-      background: #fff;
-      border-radius: 12px;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      font-size: 20px;
-      box-shadow: inset 0 0 0 2px #f0ecfa;
-      transition: background .1s, transform .1s;
-    }
-    /* .on 이 붙으면 색이 켜져 (눌렸다는 뜻) */
-    .stick div.on { background: var(--pink); transform: scale(1.1); }
-
-    .status {
-      text-align: center;
-      margin-top: 18px;
-      font-size: 14px;
+    .fact {
+      background: #faf8ff;
+      border-radius: 14px;
+      padding: 10px 14px;
+      font-size: 13px;
       color: var(--ink-soft);
     }
-    .row { text-align: center; margin-top: 18px; display: flex; gap: 10px; justify-content: center; flex-wrap: wrap; }
+    .fact b { display: block; font-size: 16px; color: var(--ink); margin-top: 2px; }
+
+    /* ---- 조이스틱마다 한 칸 ---- */
+    .pads { display: grid; gap: 12px; margin-bottom: 16px; }
+    .pad {
+      background: #faf8ff;
+      border: 3px solid #efe9ff;
+      border-radius: 18px;
+      padding: 14px 16px;
+    }
+    .pad.live { border-color: #a8e6cf; }
+    .pad h3 { margin: 0 0 4px; font-size: 17px; }
+    .pad .id { font-size: 12px; color: var(--ink-soft); word-break: break-all; margin-bottom: 10px; }
+    .row { display: flex; gap: 16px; flex-wrap: wrap; align-items: center; }
+
+    /* 버튼 번호 칸들 (누르면 불이 켜져) */
+    .btns { display: flex; flex-wrap: wrap; gap: 5px; }
+    .b {
+      width: 30px; height: 30px; border-radius: 9px;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 12px; font-weight: 800;
+      background: #fff; box-shadow: inset 0 0 0 2px #ece6f6; color: #9a93aa;
+    }
+    .b.on { background: #ffd94a; color: #4a3a00; box-shadow: inset 0 0 0 3px #d9a71f; transform: scale(1.1); }
+    .b.seen { color: var(--ink); box-shadow: inset 0 0 0 2px #cfc6e6; }
+
+    /* 방향 십자 */
+    .stick {
+      display: grid; grid-template-columns: repeat(3, 34px); grid-template-rows: repeat(3, 34px);
+      gap: 4px;
+    }
+    .stick div {
+      border-radius: 9px; background: #fff; box-shadow: inset 0 0 0 2px #ece6f6;
+      display: flex; align-items: center; justify-content: center; font-size: 15px;
+    }
+    .stick div.on { background: #ffb3c9; box-shadow: inset 0 0 0 3px #e0607f; }
+    .axes { font: 12px/1.5 ui-monospace, monospace; color: var(--ink-soft); }
+
+    .who { font-weight: 800; }
+    .kbd-box { background: #fffdf3; border-radius: 14px; padding: 12px 16px; font-size: 14px; }
+    .kbd-box b { font-size: 18px; }
+
+    .foot { display: flex; gap: 10px; justify-content: center; flex-wrap: wrap; margin-top: 18px; }
     .btn.small { padding: 10px 20px; font-size: 15px; background: var(--pink); box-shadow: 0 6px 0 #f195b1; }
-    .btn.small:hover  { box-shadow: 0 8px 0 #f195b1; }
-    .btn.small:active { box-shadow: 0 2px 0 #f195b1; }
+    .ver { text-align: center; font-size: 11px; color: var(--ink-soft); margin-top: 12px; }
   </style>
 </head>
 <body>
-  <main class="card">
-    <h1>🕹️ 조종기 점검기</h1>
-    <p class="sub">조종기를 꽂고 <b>스틱을 움직이거나 버튼을 눌러</b>보세요!</p>
+<main class="card">
+  <h1>🕹️ 조종기 점검기</h1>
+  <p class="sub">조이스틱을 꽂고 <b>아무 버튼이나 꾹 눌러</b> 보세요. 맨 위 칸이 무엇이 문제인지 알려줘요!</p>
 
-    <div class="panels">
+  <!-- 결론 칸 -->
+  <div class="verdict wait" id="verdict"></div>
 
-      <!-- ① 키보드로 인식되는 경우 -->
-      <section class="panel">
-        <h2>⌨️ 키보드로 인식됨</h2>
-        <p class="tip">조종기가 키보드인 척할 때 여기에 나와요.</p>
-        <div class="now">
-          <div class="code" id="keyNow">–</div>
-          <div class="label">방금 누른 키 이름</div>
-        </div>
-        <!-- 스틱 방향 십자 그림 (가운데 칸은 비워둠) -->
-        <div class="stick">
-          <div></div><div id="kUp">⬆️</div><div></div>
-          <div id="kLeft">⬅️</div><div>🕹️</div><div id="kRight">➡️</div>
-          <div></div><div id="kDown">⬇️</div><div></div>
-        </div>
-        <div class="list" id="keyList"></div>
-      </section>
+  <!-- 컴퓨터 정보 -->
+  <div class="facts" id="facts"></div>
 
-      <!-- ② 게임패드로 인식되는 경우 -->
-      <section class="panel">
-        <h2>🎮 게임패드로 인식됨</h2>
-        <p class="tip">조종기가 게임패드일 때 여기에 나와요.</p>
-        <div class="now">
-          <div class="code" id="padNow">–</div>
-          <div class="label">방금 누른 버튼 번호</div>
-        </div>
-        <div class="stick">
-          <div></div><div id="gUp">⬆️</div><div></div>
-          <div id="gLeft">⬅️</div><div>🕹️</div><div id="gRight">➡️</div>
-          <div></div><div id="gDown">⬇️</div><div></div>
-        </div>
-        <div class="list" id="padList"></div>
-      </section>
+  <!-- 찾은 조이스틱들 -->
+  <div class="pads" id="pads"></div>
 
+  <!-- 키보드 -->
+  <div class="kbd-box">⌨️ 키보드로 들어온 키: <b id="keyNow">–</b>
+    <div style="font-size:12px;color:var(--ink-soft);margin-top:4px">
+      조이스틱 버튼을 눌렀는데 여기에 글자가 나오면 → 조이스틱이 <b style="font-size:12px">키보드처럼</b> 연결된 거예요
     </div>
+  </div>
 
-    <p class="status" id="status">게임패드를 찾는 중… (안 잡히면 버튼을 한 번 눌러보세요)</p>
+  <div class="foot">
+    <button class="btn small" id="resetBtn">🧹 지우고 다시</button>
+    <a class="btn small" href="index.html">🎮 게임으로</a>
+  </div>
+  <p class="ver">점검기 버전 2026-11-07c · 이 화면을 사진 찍어서 보내주면 원인을 같이 찾을 수 있어요 📸</p>
+</main>
 
-    <div class="row">
-      <button class="btn small" id="resetBtn">🧹 지우고 다시 하기</button>
-      <a class="btn small" href="index.html">🏠 처음으로</a>
-    </div>
-  </main>
+<script>
+/* ===========================================================
+   1. 이 컴퓨터와 브라우저는 무엇일까?
+   =========================================================== */
+const ua = navigator.userAgent;
+const OS =
+  /Windows/.test(ua)               ? '윈도우' :
+  /Mac OS X|Macintosh/.test(ua)    ? '맥(Mac)' :
+  /Android/.test(ua)               ? '안드로이드' :
+  /Linux|X11/.test(ua)             ? '리눅스 (우노Q 등)' :
+  /iPhone|iPad/.test(ua)           ? '아이폰/아이패드' : '알 수 없음';
+const BROWSER =
+  /Edg\//.test(ua)                 ? '엣지(Edge)' :
+  /Chrome\//.test(ua)              ? '크롬(Chrome)' :
+  /Firefox\//.test(ua)             ? '파이어폭스' :
+  /Safari\//.test(ua)              ? '사파리' : '알 수 없음';
+const HAS_API = typeof navigator.getGamepads === 'function';
+const SECURE = window.isSecureContext;
 
-  <script>
-  /* ===========================================================
-     여기부터는 '움직이게 하는 마법' 자바스크립트야.
-     =========================================================== */
+// 게임에서 정한 '조이스틱 → 친구' 배정 (없으면 기본값: 1번=다영)
+const NAMES = ['🟢 세은', '🟡 다영', '🔴 태준'];
+let owner = [1, 0, 2];
+try { const v = JSON.parse(localStorage.getItem('padOwner')); if (Array.isArray(v)) owner = v; } catch (e) {}
 
-  // 화면에서 글자를 바꿀 자리들을 미리 찾아둬 (매번 찾으면 느리거든)
-  const keyNow   = document.getElementById('keyNow');
-  const padNow   = document.getElementById('padNow');
-  const keyList  = document.getElementById('keyList');
-  const padList  = document.getElementById('padList');
-  const statusEl = document.getElementById('status');
+document.getElementById('facts').innerHTML =
+  fact('💻 컴퓨터', OS) +
+  fact('🌐 브라우저', BROWSER) +
+  fact('🔒 안전한 주소(https)', SECURE ? '✅ 예' : '❌ 아니요') +
+  fact('🕹️ 조이스틱 기능', HAS_API ? '✅ 있음' : '❌ 없음');
 
-  // 지금까지 눌러본 것들을 기억해두는 '주머니'
-  // Set 은 같은 것을 두 번 넣어도 하나만 남는 특별한 주머니야.
-  const seenKeys = new Set();
-  const seenPads = new Set();
+function fact(label, value) { return '<div class="fact">' + label + '<b>' + value + '</b></div>'; }
 
-  /* ---------- ① 키보드 입력 확인하기 ---------- */
+/* ===========================================================
+   2. 키보드로 들어오는 키 보기
+   =========================================================== */
+let keyboardHit = false;
+window.addEventListener('keydown', (e) => {
+  e.preventDefault();
+  keyboardHit = true;
+  document.getElementById('keyNow').textContent = e.code;
+});
 
-  // 키보드 화살표 키 이름과, 화면 십자 그림을 짝지어 놓은 표
-  const KEY_ARROWS = {
-    ArrowUp: 'kUp', ArrowDown: 'kDown', ArrowLeft: 'kLeft', ArrowRight: 'kRight'
-  };
+/* ===========================================================
+   3. 조이스틱을 계속 살펴보기 (1초에 60번)
+   =========================================================== */
+const seen = {};          // 조이스틱마다 한 번이라도 눌러본 버튼
+const startedAt = performance.now();
 
-  // 키를 '누를 때' 실행되는 약속
-  window.addEventListener('keydown', (e) => {
-    e.preventDefault();               // 화면이 스크롤되는 걸 막아줘
+function loop() {
+  const pads = HAS_API ? Array.from(navigator.getGamepads()).filter(Boolean) : [];
+  drawPads(pads);
+  drawVerdict(pads);
+  requestAnimationFrame(loop);
+}
 
-    keyNow.textContent = e.code;      // e.code 는 키의 '진짜 이름' (예: KeyA, Digit1)
+function drawPads(pads) {
+  const box = document.getElementById('pads');
+  if (!pads.length) { box.innerHTML = ''; return; }
 
-    // 아직 안 눌러본 키라면 목록에 알약 모양으로 추가해
-    if (!seenKeys.has(e.code)) {
-      seenKeys.add(e.code);
-      const chip = document.createElement('span');
-      chip.className = 'chip key';
-      chip.textContent = e.code;
-      keyList.appendChild(chip);
-    }
+  box.innerHTML = pads.map((pad, slot) => {
+    seen[pad.index] = seen[pad.index] || new Set();
+    const mode = pad.mapping === 'standard' ? 'XINPUT (표준) 모드' : 'DINPUT (비표준) 모드';
 
-    // 화살표 키면 십자 그림에 불을 켜
-    const box = KEY_ARROWS[e.code];
-    if (box) document.getElementById(box).classList.add('on');
-  });
+    // 버튼 0 ~ (개수-1)
+    let btns = '';
+    pad.buttons.forEach((b, n) => {
+      if (b.pressed) seen[pad.index].add(n);
+      btns += '<div class="b' + (b.pressed ? ' on' : '') + (seen[pad.index].has(n) ? ' seen' : '') + '">' + n + '</div>';
+    });
 
-  // 키에서 '손을 뗄 때' 실행되는 약속 → 십자 그림 불을 꺼
-  window.addEventListener('keyup', (e) => {
-    const box = KEY_ARROWS[e.code];
-    if (box) document.getElementById(box).classList.remove('on');
-  });
+    // 방향: 스틱(축 0,1) + 표준 십자(12~15) + DINPUT 햇(축 9)
+    const x = pad.axes[0] || 0, y = pad.axes[1] || 0;
+    const B = (n) => !!(pad.buttons[n] && pad.buttons[n].pressed);
+    const h = hat(pad);
+    const L = x < -0.5 || B(14) || h.left,  R = x > 0.5 || B(15) || h.right;
+    const U = y < -0.5 || B(12) || h.up,    D = y > 0.5 || B(13) || h.down;
 
-  /* ---------- ② 게임패드 입력 확인하기 ---------- */
+    const axes = pad.axes.map((v, i) => i + ':' + v.toFixed(2)).join('  ');
 
-  // 게임패드는 '눌렀어요!' 하고 알려주지 않아.
-  // 그래서 우리가 계속 "지금 눌렸니?" 하고 물어봐야 해. 이걸 폴링이라고 불러.
+    return '<div class="pad live">' +
+      '<h3>🕹️ 조이스틱 ' + (slot + 1) + '번 → <span class="who">' + (NAMES[owner[slot]] || '-') + '</span> 조종 · ' + mode + '</h3>' +
+      '<div class="id">' + pad.id + '</div>' +
+      '<div class="row">' +
+        '<div class="stick">' +
+          '<div></div><div class="' + (U ? 'on' : '') + '">⬆️</div><div></div>' +
+          '<div class="' + (L ? 'on' : '') + '">⬅️</div><div>🕹️</div><div class="' + (R ? 'on' : '') + '">➡️</div>' +
+          '<div></div><div class="' + (D ? 'on' : '') + '">⬇️</div><div></div>' +
+        '</div>' +
+        '<div><div style="font-size:13px;font-weight:800;margin-bottom:6px">누른 버튼 번호 (노랑=지금 누르는 중)</div>' +
+          '<div class="btns">' + btns + '</div>' +
+          '<div class="axes" style="margin-top:8px">축: ' + axes + '</div></div>' +
+      '</div>' +
+    '</div>';
+  }).join('');
+}
 
-  let padConnected = false;
+/* DINPUT 모드의 십자 방향(햇 스위치) — 게임의 js/input.js 와 같은 방법 */
+function hat(pad) {
+  const none = { up: false, down: false, left: false, right: false };
+  if (pad.mapping === 'standard') return none;
+  const v = pad.axes[9];
+  if (v === undefined || v > 1.05 || v < -1.05) return none;
+  const d = Math.round((v + 1) * 3.5) % 8;
+  return { up: d === 7 || d <= 1, right: d >= 1 && d <= 3, down: d >= 3 && d <= 5, left: d >= 5 };
+}
 
-  // 게임패드가 연결되면 알려주는 약속
-  window.addEventListener('gamepadconnected', (e) => {
-    padConnected = true;
-    statusEl.textContent = '✅ 게임패드 연결됨: ' + e.gamepad.id;
-  });
+/* ===========================================================
+   4. 결론 — 무엇이 문제인지, 어떻게 하면 되는지
+   =========================================================== */
+function drawVerdict(pads) {
+  const v = document.getElementById('verdict');
+  const waited = (performance.now() - startedAt) / 1000;
+  let cls, html;
 
-  window.addEventListener('gamepaddisconnected', () => {
-    padConnected = false;
-    statusEl.textContent = '❌ 게임패드 연결이 끊어졌어요.';
-  });
-
-  function checkGamepad() {
-    // 연결된 게임패드 목록을 가져와
-    const pads = navigator.getGamepads ? navigator.getGamepads() : [];
-
-    for (const pad of pads) {
-      if (!pad) continue;            // 빈 자리는 건너뛰어
-
-      if (!padConnected) {
-        padConnected = true;
-        statusEl.textContent = '✅ 게임패드 연결됨: ' + pad.id;
-      }
-
-      // --- 버튼들 확인 ---
-      // pad.buttons 는 버튼이 줄줄이 들어있는 목록이야. 0번, 1번, 2번… 이렇게 번호가 있어.
-      pad.buttons.forEach((btn, i) => {
-        if (btn.pressed) {
-          padNow.textContent = i + '번 버튼';
-          if (!seenPads.has(i)) {
-            seenPads.add(i);
-            const chip = document.createElement('span');
-            chip.className = 'chip';
-            chip.textContent = i + '번';
-            padList.appendChild(chip);
-          }
-        }
-      });
-
-      // --- 스틱 확인 ---
-      // pad.axes[0] 은 좌우, pad.axes[1] 은 위아래 기울기야.
-      // -1 은 왼쪽/위, +1 은 오른쪽/아래, 0 은 가운데를 뜻해.
-      // 0.5 는 '이만큼 기울어야 진짜 움직인 걸로 쳐줄게' 하는 기준선이야.
-      const x = pad.axes[0] || 0;
-      const y = pad.axes[1] || 0;
-      setOn('gLeft',  x < -0.5);
-      setOn('gRight', x >  0.5);
-      setOn('gUp',    y < -0.5);
-      setOn('gDown',  y >  0.5);
-
-      // 십자패드(D-pad)가 12~15번 버튼으로 오는 조종기도 있어서 같이 확인해
-      if (pad.buttons[12] && pad.buttons[12].pressed) setOn('gUp', true);
-      if (pad.buttons[13] && pad.buttons[13].pressed) setOn('gDown', true);
-      if (pad.buttons[14] && pad.buttons[14].pressed) setOn('gLeft', true);
-      if (pad.buttons[15] && pad.buttons[15].pressed) setOn('gRight', true);
-    }
-
-    // requestAnimationFrame 은 "다음 화면 그릴 때 나를 또 불러줘" 라는 뜻이야.
-    // 1초에 약 60번 반복돼서 아주 부드러워.
-    requestAnimationFrame(checkGamepad);
+  if (!HAS_API) {
+    cls = 'bad';
+    html = '<h2>❌ 이 브라우저는 조이스틱을 못 써요</h2>' +
+           '<ol><li><b>크롬(Chrome)</b>이나 <b>엣지(Edge)</b>로 이 주소를 열어주세요.</li></ol>';
+  } else if (!SECURE) {
+    cls = 'bad';
+    html = '<h2>❌ 주소가 안전하지 않아서 조이스틱이 막혀 있어요</h2>' +
+           '<ol><li>주소창이 <b>https://i20091119-ai.github.io/…</b> 로 시작하는지 확인해 주세요.</li>' +
+           '<li><b>http://</b> 나 숫자 주소(192.168…)로 열었다면 위 https 주소로 다시 열어주세요.</li></ol>';
+  } else if (pads.length) {
+    const std = pads.every(p => p.mapping === 'standard');
+    cls = 'ok';
+    html = '<h2>✅ 조이스틱 ' + pads.length + '개를 찾았어요!</h2>' +
+           '아래 칸에서 <b>버튼을 누르면 노랗게</b>, <b>스틱을 밀면 분홍색</b>으로 켜지는지 봐주세요.' +
+           '<ol>' +
+           '<li>조이스틱 1번은 <b>' + (NAMES[owner[0]] || '') + '</b>이(가) 조종해요. 바꾸려면 조이스틱 위 <b>SELECT</b>!</li>' +
+           (std ? '' : '<li>지금은 <b>DINPUT 모드</b>예요. 스틱이 안 움직이면 스틱 스위치를 <b>LS</b>로 바꿔 보세요.</li>') +
+           '<li>여기서는 되는데 게임에서 안 되면 → 게임 화면에서 <b>Ctrl + Shift + R</b> (맥은 <b>Cmd + Shift + R</b>) 로 새로고침!</li>' +
+           '</ol>';
+  } else if (keyboardHit) {
+    cls = 'wait';
+    html = '<h2>⚠️ 조이스틱이 키보드처럼 연결돼 있어요</h2>' +
+           '<ol><li>조이스틱 위쪽 왼쪽 스위치를 <b>XINPUT/NS</b> (맨 위)로 옮기고, USB를 <b>뺐다가 다시 꽂아</b> 주세요.</li></ol>';
+  } else if (waited < 6) {
+    cls = 'wait';
+    html = '<h2>👆 조이스틱 버튼을 눌러 주세요</h2>' +
+           '브라우저는 페이지를 연 다음 <b>버튼을 한 번 눌러야</b> 조이스틱을 알아봐요. <b>X 버튼</b>을 꾹 눌러보세요!';
+  } else {
+    cls = 'bad';
+    const mac = OS.startsWith('맥'), linux = OS.startsWith('리눅스');
+    html = '<h2>❌ 아직 조이스틱을 못 찾았어요</h2><ol>' +
+           '<li>조이스틱의 <b>X 버튼</b>을 꾹 눌러 보세요. (빨간 불이 켜져 있는지도 확인!)</li>' +
+           '<li>USB를 <b>뺐다가 다시 꽂고</b> 이 화면을 <b>새로고침</b> 해주세요.</li>' +
+           ((mac || linux)
+             ? '<li><b>' + OS + '</b>은(는) XINPUT 조이스틱을 못 알아볼 때가 있어요 → ' +
+               '왼쪽 스위치를 <b>DINPUT/PS3</b> (맨 아래)로, 스틱 스위치를 <b>LS</b> (맨 위)로 바꾸고 → USB 다시 꽂기 → 새로고침</li>'
+             : '<li>그래도 안 되면 왼쪽 스위치를 <b>DINPUT/PS3</b> (맨 아래)로, 스틱 스위치를 <b>LS</b> (맨 위)로 바꿔 보세요.</li>') +
+           '<li>그래도 안 되면 <b>이 화면을 사진 찍어서</b> 보내주세요 📸</li></ol>';
   }
 
-  // 십자 그림에 불을 켜거나 끄는 작은 도우미 함수
-  function setOn(id, isOn) {
-    document.getElementById(id).classList.toggle('on', isOn);
-  }
+  v.className = 'verdict ' + cls;
+  if (v.innerHTML !== html) v.innerHTML = html;
+}
 
-  // 확인 시작!
-  requestAnimationFrame(checkGamepad);
+document.getElementById('resetBtn').addEventListener('click', () => {
+  for (const k in seen) seen[k].clear();
+  keyboardHit = false;
+  document.getElementById('keyNow').textContent = '–';
+});
 
-  /* ---------- ③ 지우기 버튼 ---------- */
-  document.getElementById('resetBtn').addEventListener('click', () => {
-    seenKeys.clear();
-    seenPads.clear();
-    keyList.innerHTML = '';
-    padList.innerHTML = '';
-    keyNow.textContent = '–';
-    padNow.textContent = '–';
-  });
-  </script>
+window.addEventListener('gamepadconnected', () => {});   // 연결 알림을 받겠다고 브라우저에 말해두기
+requestAnimationFrame(loop);
+</script>
 </body>
 </html>
