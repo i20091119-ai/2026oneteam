@@ -750,3 +750,50 @@
 /* 기준 시간을 넘기면 시계가 회색으로 (별 2개는 놓쳤다는 뜻) */
 .timer.late b { color: #a39bb0; }
 .timer.late small { text-decoration: line-through; }
+
+
+/* ==================== ⌨️ 아래 막대: 친구별 이동 키 ==================== */
+/* 친구 카드 — 왼쪽에 친구 색 띠가 붙어 있어서 누구 건지 한눈에 보여 */
+.players { gap: 10px; }
+.pcard {
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 4px;
+  padding: 7px 14px 8px;
+  border-radius: 14px;
+  box-shadow: inset 4px 0 0 var(--hero, #d8d0e8), inset 0 0 0 2px #efe9f7;
+}
+.pcard.pad { box-shadow: inset 4px 0 0 var(--hero, #d8d0e8), inset 0 0 0 2px #a8e6cf; }
+.pcard .who { display: flex; align-items: center; gap: 6px; font-size: 13px; }
+.pcard .who b { color: var(--hero-dark, var(--ink)); }
+.pcard .dot { background: var(--hero, #ccc); }
+.pcard .keys {
+  display: flex;
+  align-items: center;
+  gap: 3px;
+  flex-wrap: wrap;
+  font-size: 12px;
+  font-weight: 700;
+}
+.pcard .lab {
+  color: var(--ink-soft);
+  font-weight: 700;
+  margin: 0 3px 0 6px;
+}
+.pcard .lab:first-child { margin-left: 0; }
+
+/* 키 모양 글자 */
+.cap {
+  display: inline-block;
+  min-width: 22px;
+  padding: 2px 6px;
+  border-radius: 6px;
+  background: #fff;
+  color: var(--ink);
+  font: 800 12px/1.2 inherit;
+  font-family: inherit;
+  text-align: center;
+  box-shadow: 0 2px 0 #d9d1e8, inset 0 0 0 2px #ece6f6;
+}
+
+.pcard.common { --hero: #cfc6dd; }

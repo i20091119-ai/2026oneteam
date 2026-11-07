@@ -1520,22 +1520,59 @@ document.getElementById('lockClose').addEventListener('click', closeLock);
 /* -----------------------------------------------------------
    ⑨ 화면 아래 '누가 무엇으로 조종하나' 막대
    ----------------------------------------------------------- */
+/* 친구마다 쓰는 키보드 키 (js/input.js 의 KEY_MAPS 와 똑같아야 해!) */
+const KEY_HINTS = [
+  { move: ['W', 'A', 'S', 'D'], jump: 'Space', act: 'E' },   // 🟢 세은
+  { move: ['↑', '←', '↓', '→'], jump: 'Enter', act: '/' },   // 🟡 다영
+  { move: ['I', 'J', 'K', 'L'], jump: 'H',     act: 'U' }    // 🔴 태준
+];
+
+/* 작은 키 모양 글자 하나 만들기 */
+function cap(text) {
+  return '<kbd class="cap">' + text + '</kbd>';
+}
+
 function updatePlayerBar() {
   const bar = document.getElementById('playerBar');
-  bar.innerHTML = '';
+  let html = '';
 
   HEROES.forEach((hero, i) => {
     const pi = input.players[i];
     const hasPad = pi && pi.padIndex !== null;
+    const k = KEY_HINTS[i];
 
-    const card = document.createElement('div');
-    card.className = 'pcard' + (hasPad ? ' pad' : '');
-    card.innerHTML =
-      '<span class="dot" style="background:' + hero.color + '"></span>' +
-      '<span>' + hero.name + '</span>' +
-      '<span class="src">' + (hasPad ? '🕹️ 조종기 ' + (i + 1) + '번' : '⌨️ 키보드') + '</span>';
-    bar.appendChild(card);
+    // 조종기를 쓰면 조종기 버튼을, 키보드를 쓰면 키보드 키를 보여줘
+    const keys = hasPad
+      ? '<span class="lab">이동</span> 🕹️스틱 ' +
+        '<span class="lab">점프</span>' + cap('X') +
+        '<span class="lab">조사</span>' + cap('Y')
+      : '<span class="lab">이동</span>' + k.move.map(cap).join('') +
+        '<span class="lab">점프</span>' + cap(k.jump) +
+        '<span class="lab">조사</span>' + cap(k.act);
+
+    html +=
+      '<div class="pcard' + (hasPad ? ' pad' : '') + '" style="--hero:' + hero.color + ';--hero-dark:' + hero.dark + '">' +
+        '<div class="who">' +
+          '<span class="dot"></span>' +
+          '<b>' + hero.name + '</b>' +
+          '<span class="src">' + (hasPad ? '🕹️ 조종기 ' + (i + 1) + '번' : '⌨️ 키보드') + '</span>' +
+        '</div>' +
+        '<div class="keys">' + keys + '</div>' +
+      '</div>';
   });
+
+  // 누구나 쓸 수 있는 키
+  html +=
+    '<div class="pcard common">' +
+      '<div class="who"><b>모두</b></div>' +
+      '<div class="keys">' +
+        '<span class="lab">정지</span>' + cap('P') +
+        '<span class="lab">다시</span>' + cap('R') +
+      '</div>' +
+    '</div>';
+
+  // 똑같으면 다시 그리지 않아 (1초마다 불리니까 깜빡이지 않게)
+  if (bar.innerHTML !== html) bar.innerHTML = html;
 }
 // 조종기를 꽂거나 뺄 때마다 막대를 새로 그려줘
 window.addEventListener('gamepadconnected', updatePlayerBar);
