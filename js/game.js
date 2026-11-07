@@ -22,7 +22,7 @@ const game = {
   sectionIndex: 0,      // 그 스테이지의 몇 번째 구역인지
   players: [],          // 세 친구
   stars: 0,             // 얻은 별 개수 ⭐
-  startTime: 0,         // 시작한 순간
+  lastTime: 0,          // 바로 전 장면의 시각 (시계 계산용)
   elapsed: 0,           // 흘러간 시간 (초)
   paused: false,
   time: 0,              // 애니메이션용 시계
@@ -89,7 +89,6 @@ function startGame() {
   game.sectionIndex = 0;
   game.stars = 0;
   game.paused = false;
-  game.startTime = performance.now();
   game.elapsed = 0;
 
   // 단서 수첩을 비우고, 조사했던 표시도 모두 지워
@@ -519,8 +518,7 @@ function clearStage() {
    ----------------------------------------------------------- */
 function restartStage() {
   game.sectionIndex = 0;                 // 이 스테이지의 첫 번째 방으로
-  game.startTime = performance.now();    // 시계도 0초부터 다시
-  game.elapsed = 0;
+  game.elapsed = 0;                      // 시계도 0초부터 다시
   game.paused = false;
 
   // 이 스테이지에서 모은 단서도 처음부터 다시 찾아야 해
@@ -539,6 +537,23 @@ function restartStage() {
 }
 
 
+/* -----------------------------------------------------------
+   ⏱ 지금 시계가 돌아가야 하나?
+
+   학생들이 정한 규칙:
+     🎮 게임 중        → 흘러감
+     🔒 비밀번호 창    → 흘러감  (고민하는 것도 게임이니까!)
+     ⏸ 정지           → 멈춤
+     ⚙️ 설정 창        → 멈춤
+   ----------------------------------------------------------- */
+function clockRunning() {
+  if (game.screen !== 'game') return false;                    // 게임 화면이 아니면 멈춤
+  if (overlay.classList.contains('active')) return false;      // ⚙️ 설정 창 → 멈춤
+  if (game.lockOpen) return true;                              // 🔒 비밀번호 창 → 흘러감
+  return !game.paused;                                         // ⏸ 정지 → 멈춤
+}
+
+
 /* 세 친구 중 누구든 이 버튼을 '방금' 눌렀나? */
 function anyonePressed(action) {
   return input.players.some(pad => pad.isPressed(action));
@@ -549,7 +564,6 @@ function anyonePressed(action) {
 function nextStage() {
   game.stageIndex++;
   game.sectionIndex = 0;
-  game.startTime = performance.now();
   game.elapsed = 0;
 
   // 단서 수첩은 스테이지마다 새로 시작해
@@ -1192,6 +1206,11 @@ function loop(now) {
   game.time = now;
   updateDoodleSeed(now);        // 손그림이 보글보글 꿈틀거리게
 
+  // 바로 전 장면에서 지금까지 흐른 시간(밀리초)
+  // 창을 다른 데로 돌렸다 오면 아주 큰 숫자가 나와서, 최대 0.25초로 잘라줘
+  const dt = Math.min(250, now - (game.lastTime || now));
+  game.lastTime = now;
+
   input.update();                 // ① 조종기·키보드 신호 받기 (항상!)
 
   // ⚙️ 설정 창이 열려 있으면 그것만 조작해 (어느 화면에서든 제일 먼저!)
@@ -1233,10 +1252,6 @@ function loop(now) {
     if (sec.exit) checkExit(sec);// 셋이 출구에 모였나?
     draw();                      // ④ 그림 그리기
 
-    // 시간 재기
-    game.elapsed = (now - game.startTime) / 1000;
-    document.getElementById('timeCount').textContent = game.elapsed.toFixed(1);
-    document.getElementById('starCount').textContent = game.stars;
 
     // 정지·다시하기·설정 버튼 확인
     // ⚠️ 예전엔 1번 조종기(세은)만 확인했어.
@@ -1249,6 +1264,13 @@ function loop(now) {
   // 정지 중에도 조종기로 다시 시작할 수 있게
   else if (game.paused) {
     if (anyonePressed('pause')) togglePause();
+  }
+
+  // ⏱ 시계 — 돌아가야 할 때만 시간을 더해줘
+  if (clockRunning()) game.elapsed += dt / 1000;
+  if (game.screen === 'game') {
+    document.getElementById('timeCount').textContent = game.elapsed.toFixed(1);
+    document.getElementById('starCount').textContent = game.stars;
   }
 
   input.endFrame();              // '막 눌림' 표시 지우기
