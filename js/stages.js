@@ -194,24 +194,25 @@ const STAGES = [
           { x: 330, y: 262, w: 80, h: 46 }
         ],
 
+        // 🧑 승객은 방에 들어올 때마다 3~4명이 '무작위' 좌석에 앉아 (game.js 의 seatPassengers)
         // 💺 좌석 밑을 뒤져봐! 🔢장치 문제 1개 + 🔒자물쇠 문제 3개가 숨어 있어
         objects: [
           // 윗줄 좌석
-          { x: 128, y: 110, w: 62, h: 62, shape: 'seat', name: '1A 좌석', kind: 'empty' },
-          { x: 212, y: 110, w: 62, h: 62, shape: 'seat', name: '1B 좌석', icon: '💺',
+          { x: 139, y: 121, w: 40, h: 40, shape: 'seat', name: '1A 좌석', kind: 'empty' },
+          { x: 223, y: 121, w: 40, h: 40, shape: 'seat', name: '1B 좌석', icon: '💺',
             kind: 'quiz', answer: 48, tag: '🔢 장치',
             question: '좌석은 A부터 F까지 한 줄에 6개예요.\n1열부터 8열까지 있으면\n좌석은 모두 몇 개일까요?' },
-          { x: 296, y: 110, w: 62, h: 62, shape: 'seat', name: '1C 좌석', icon: '💺',
+          { x: 307, y: 121, w: 40, h: 40, shape: 'seat', name: '1C 좌석', icon: '💺',
             kind: 'quiz', answer: 8, tag: '🔒 자물쇠',
             question: '0부터 9까지 숫자 중에서\n동그란 구멍이 두 개인 숫자는?' },
-          { x: 380, y: 110, w: 62, h: 62, shape: 'seat', name: '1D 좌석', kind: 'empty' },
+          { x: 391, y: 121, w: 40, h: 40, shape: 'seat', name: '1D 좌석', kind: 'empty' },
           // 아랫줄 좌석
-          { x: 128, y: 340, w: 62, h: 62, shape: 'seat', name: '2A 좌석', kind: 'empty' },
-          { x: 212, y: 340, w: 62, h: 62, shape: 'seat', name: '2B 좌석', icon: '💺',
+          { x: 139, y: 351, w: 40, h: 40, shape: 'seat', name: '2A 좌석', kind: 'empty' },
+          { x: 223, y: 351, w: 40, h: 40, shape: 'seat', name: '2B 좌석', icon: '💺',
             kind: 'quiz', answer: 9, tag: '🔒 자물쇠',
             question: '1부터 9까지 모두 더한 다음,\n그 답에 있는 두 숫자를 또 더하면?' },
-          { x: 296, y: 340, w: 62, h: 62, shape: 'seat', name: '2C 좌석', kind: 'empty' },
-          { x: 380, y: 340, w: 62, h: 62, shape: 'seat', name: '2D 좌석', icon: '💺',
+          { x: 307, y: 351, w: 40, h: 40, shape: 'seat', name: '2C 좌석', kind: 'empty' },
+          { x: 391, y: 351, w: 40, h: 40, shape: 'seat', name: '2D 좌석', icon: '💺',
             kind: 'quiz', answer: 1, tag: '🔒 자물쇠',
             question: '거울에 비춰도 똑같아 보이는 숫자 중에서\n가장 작은 수는? (0은 빼고)' },
           // 좌석 말고도 뒤져볼 게 많아!

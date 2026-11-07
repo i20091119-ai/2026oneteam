@@ -114,6 +114,24 @@ function currentStage()   { return STAGES[game.stageIndex]; }
 function currentSection() { return currentStage().sections[game.sectionIndex]; }
 
 /* 구역을 불러와서 캐릭터를 시작 위치에 놓아줘 */
+/* -----------------------------------------------------------
+   🧑 승객 무작위로 앉히기
+   학생들 요청: "좌석에 사람도 있었으면 좋겠어 — 몇 자리만, 무작위로!"
+   방에 들어올 때마다 좌석 중 3~4자리를 골라 승객을 앉혀.
+   단서와는 상관없어! (승객이 앉아 있어도 좌석 밑은 뒤져볼 수 있어)
+   ----------------------------------------------------------- */
+function seatPassengers(sec) {
+  const seats = (sec.objects || []).filter(o => o.shape === 'seat');
+  seats.forEach(o => { delete o.sitter; });
+  if (!seats.length) return;
+
+  // 카드 섞듯이 좌석 순서를 마구 섞어
+  const shuffled = seats.slice().sort(() => Math.random() - 0.5);
+  const count = Math.min(seats.length, 3 + Math.floor(Math.random() * 2));   // 3명 또는 4명
+  const looks = [0, 1, 2, 3].sort(() => Math.random() - 0.5);                // 옷·머리색도 섞어
+  for (let i = 0; i < count; i++) shuffled[i].sitter = looks[i % looks.length];
+}
+
 function loadSection() {
   const sec = currentSection();
 
@@ -124,6 +142,7 @@ function loadSection() {
   (sec.bridges || []).forEach(b => b.anim = 0);
   game.solved = new Set();               // 이 방에서 푼 발판 퍼즐 목록
   fx.clear();
+  seatPassengers(sec);                   // 🧑 승객들 자리 잡기
 
   game.players = HEROES.map((hero, i) => {
     const sp = sec.spawns[i] || sec.spawns[0];
@@ -1135,6 +1154,9 @@ function drawObject(o, seed) {
 
   // 🪑 가구를 진짜 모양대로 그려줘 (네모 칸 없이!)
   drawFurniture(ctx, o, seed);
+
+  // 🧑 좌석에 승객이 앉아 있으면 그려줘
+  if (o.sitter !== undefined) drawPassenger(ctx, o, seed);
 
   ctx.globalAlpha = 1;
 

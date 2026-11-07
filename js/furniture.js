@@ -296,3 +296,75 @@ const FURNITURE = {
     }
   }
 };
+
+
+/* ===========================================================
+   🧑 좌석에 앉아 있는 승객 (위에서 내려다본 모습)
+   -----------------------------------------------------------
+   학생들 요청: "좌석 안에 사람도 있었으면 좋겠어!"
+   stages.js 에서 좌석에 sitter: 번호 를 적으면 그 자리에 승객이 앉아.
+   번호마다 옷 · 머리색이 달라지고, 2번 승객은 쿨쿨 자고 있어 😴
+   images/passenger.png 를 넣으면 우리가 그린 승객으로 바뀌어!
+   =========================================================== */
+const PASSENGERS = [
+  { shirt: '#e9a24f', hair: '#3b2a20' },
+  { shirt: '#9b7fd1', hair: '#6b4a2b' },
+  { shirt: '#5fb39a', hair: '#222222', sleep: true },
+  { shirt: '#e2708a', hair: '#c9a04a' }
+];
+
+function drawPassenger(ctx, o, seed) {
+  const art = skin('passenger.png');
+  if (art) { drawSkinFit(ctx, art, o.x + 2, o.y + 2, o.w - 4, o.h - 2); return; }
+
+  const P = PASSENGERS[o.sitter % PASSENGERS.length];
+  const { x, y, w, h } = o;
+  const cx = x + w / 2;
+  ctx.save();
+  ctx.lineWidth = 2.2;
+  ctx.lineJoin = 'round';
+  ctx.strokeStyle = '#3a3350';
+
+  // 다리 (무릎 위에서 본 모습)
+  ctx.fillStyle = '#4a5a7a';
+  for (const side of [-1, 1]) {
+    wobbleRect(ctx, cx + side * w * 0.12 - w * 0.09, y + h * 0.70, w * 0.18, h * 0.28, seed + side + 70, 1);
+    ctx.fill(); ctx.stroke();
+  }
+  // 몸통 (옷)
+  sloppyFill(ctx, () => wobbleRect(ctx, cx - w * 0.30, y + h * 0.36, w * 0.60, h * 0.40, seed + 71, 1.5), P.shirt, seed + 72, 1);
+  // 팔 (팔걸이 위에 올려둠)
+  ctx.fillStyle = P.shirt;
+  for (const side of [-1, 1]) {
+    wobbleRect(ctx, cx + side * w * 0.36 - w * 0.07, y + h * 0.42, w * 0.14, h * 0.30, seed + side + 73, 1);
+    ctx.fill(); ctx.stroke();
+  }
+  // 머리 (살색) + 머리카락
+  const hy = y + h * 0.32, r = w * 0.23;
+  ctx.fillStyle = '#f2c9a0';
+  wobbleCircle(ctx, cx, hy, r, seed + 74, 0.12);
+  ctx.fill(); ctx.stroke();
+  ctx.fillStyle = P.hair;
+  ctx.beginPath();
+  ctx.arc(cx, hy, r, Math.PI * 1.05, Math.PI * 1.95);
+  ctx.quadraticCurveTo(cx, hy - r * 0.15, cx - r * 0.95, hy - r * 0.3);
+  ctx.fill();
+
+  // 얼굴 — 자는 승객은 눈을 감고 'z'
+  ctx.strokeStyle = '#3a3350';
+  ctx.fillStyle = '#3a3350';
+  ctx.lineWidth = 1.6;
+  if (P.sleep) {
+    for (const side of [-1, 1]) { ctx.beginPath(); ctx.moveTo(cx + side * r * 0.45 - 2, hy + r * 0.28); ctx.lineTo(cx + side * r * 0.45 + 2, hy + r * 0.28); ctx.stroke(); }
+    const t = (typeof game !== 'undefined' ? game.time : 0) * 0.002;
+    ctx.font = 'bold 11px sans-serif';
+    ctx.globalAlpha = 0.5 + Math.sin(t) * 0.3;
+    ctx.fillText('z', cx + r * 0.9, hy - r * 0.9 - Math.sin(t) * 2);
+    ctx.globalAlpha = 1;
+  } else {
+    for (const side of [-1, 1]) { ctx.beginPath(); ctx.arc(cx + side * r * 0.42, hy + r * 0.25, 1.4, 0, Math.PI * 2); ctx.fill(); }
+    ctx.beginPath(); ctx.moveTo(cx - 2, hy + r * 0.62); ctx.lineTo(cx + 2.5, hy + r * 0.58); ctx.stroke();
+  }
+  ctx.restore();
+}
+

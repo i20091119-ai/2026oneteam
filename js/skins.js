@@ -37,6 +37,7 @@ const SKIN_LIST = [
   // 🚪 방 물건
   { group: '물건', file: 'door-exit.png',    label: '🚪 출구 문',      size: '120×180' },
   { group: '물건', file: 'lock.png',         label: '🔒 금고 자물쇠',  size: '180×200' },
+  { group: '물건', file: 'passenger.png',    label: '🧑 좌석에 앉은 승객 (위에서 본 모습)', size: '120×120' },
 
   // 🪑 가구 — 위에서 내려다본 모습
   { group: '가구', file: 'furniture-seat.png',    label: '💺 비행기 좌석' },
