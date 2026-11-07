@@ -633,7 +633,13 @@ function draw() {
 
   // --- 배경 ---
   // 방(위에서 보기)이면 바닥을, 점프맵(옆에서 보기)이면 하늘을 그려!
-  if (sec.type === 'room') {
+  // 🎨 우리가 그린 바닥 그림 (방마다 다르게: floor-plane-2.png / 스테이지 전체: floor-plane.png)
+  const floorArt = sec.type === 'room' && stage.art &&
+    (skin('floor-' + stage.art + '-' + (game.sectionIndex + 1) + '.png') || skin('floor-' + stage.art + '.png'));
+
+  if (floorArt) {
+    ctx.drawImage(floorArt, 0, 0, CANVAS_W, CANVAS_H);
+  } else if (sec.type === 'room') {
     ctx.fillStyle = theme.floor || '#f3ece1';
     ctx.fillRect(0, 0, CANVAS_W, CANVAS_H);
     drawFloorTiles(theme);          // 바닥에 무늬 깔기
@@ -1190,6 +1196,8 @@ function anyPlayerNear(o) {
    ----------------------------------------------------------- */
 function drawLock(L) {
   ctx.save();
+  const lockArt = skin('lock.png');       // 🎨 우리가 그린 자물쇠가 있으면
+  if (lockArt) { drawSkinFit(ctx, lockArt, L.x, L.y, L.w, L.h); drawLockHint(L); ctx.restore(); return; }
   ctx.lineWidth   = 4;
   ctx.strokeStyle = '#4a4a56';
   ctx.lineJoin    = 'round';
@@ -1225,7 +1233,12 @@ function drawLock(L) {
   ctx.lineTo(hx + L.w * 0.12, hy - L.w * 0.08);
   ctx.stroke();
 
-  // 가까이 가면 안내가 통통 떠올라
+  drawLockHint(L);
+  ctx.restore();
+}
+
+/* 자물쇠에 가까이 가면 'Y' 안내가 통통 떠올라 */
+function drawLockHint(L) {
   if (anyPlayerNear(L)) {
     const bob = Math.sin(game.time * 0.008) * 3;
     ctx.font = 'bold 15px sans-serif';
@@ -1244,12 +1257,13 @@ function drawLock(L) {
     ctx.textAlign = 'left';
   }
 
-  ctx.restore();
 }
 
 
 /* 대충 그린 문 🚪 */
 function drawDoor(d) {
+  const doorArt = skin('door-exit.png');  // 🎨 우리가 그린 문이 있으면
+  if (doorArt) { drawSkinFit(ctx, doorArt, d.x, d.y, d.w, d.h); return; }
   ctx.save();
   ctx.lineWidth = 3.5;
   ctx.strokeStyle = '#7a5a3a';

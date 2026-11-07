@@ -13,9 +13,10 @@
    seed 는 '이 친구만의 삐뚤빼뚤 번호'야.
    번호가 다르면 삐뚤어진 모양도 서로 달라져! */
 const HEROES = [
-  { name: '세은', color: '#9fdc6b', dark: '#4d7a2a', emoji: '🟢', seed: 11 },
-  { name: '다영', color: '#ffd94a', dark: '#a8791a', emoji: '🟡', seed: 27 },
-  { name: '태준', color: '#ff7f7f', dark: '#a83a3a', emoji: '🔴', seed: 43 }
+  // file = 우리가 그린 그림 이름 (images 폴더에 있으면 진저맨 대신 그 그림이 나와!)
+  { name: '세은', color: '#9fdc6b', dark: '#4d7a2a', emoji: '🟢', seed: 11, file: 'hero-seeun.png' },
+  { name: '다영', color: '#ffd94a', dark: '#a8791a', emoji: '🟡', seed: 27, file: 'hero-dayoung.png' },
+  { name: '태준', color: '#ff7f7f', dark: '#a83a3a', emoji: '🔴', seed: 43, file: 'hero-taejun.png' }
 ];
 
 
@@ -43,6 +44,10 @@ function roundRect(ctx, x, y, w, h, r) {
    opt    = 어떤 모습으로 그릴지
    ----------------------------------------------------------- */
 function drawGingerbread(ctx, x, y, size, hero, opt = {}) {
+  // 🎨 우리가 그린 그림이 있으면 그걸로 그리고 끝!
+  const art = skin(hero.file);
+  if (art) { drawHeroSkin(ctx, art, x, y, size, opt); return; }
+
   const facing  = opt.facing  ?? 1;
   const walk    = opt.walk    ?? 0;
   const moving  = opt.moving  ?? false;

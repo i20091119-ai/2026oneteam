@@ -17,6 +17,10 @@
    o.shape 에 적힌 이름을 보고 알맞은 그림을 골라 그려줘
    ----------------------------------------------------------- */
 function drawFurniture(ctx, o, seed) {
+  // 🎨 우리가 그린 가구 그림이 있으면 그걸 써 (images/furniture-이름.png)
+  const art = skin('furniture-' + o.shape + '.png');
+  if (art) { drawSkinFit(ctx, art, o.x, o.y, o.w, o.h); return; }
+
   const f = FURNITURE[o.shape] || FURNITURE.box;
   f(ctx, o, seed);
 }

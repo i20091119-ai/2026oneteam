@@ -1,0 +1,141 @@
+<!DOCTYPE html>
+<!-- ===========================================================
+     🎨 그림 바꾸기 확인판
+     images 폴더에 우리가 그린 그림을 넣으면 무엇이 바뀌었는지 보여줘.
+     ✅ = 우리 그림이 들어감 / ✏️ = 아직 원래 손그림
+     =========================================================== -->
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>🎨 그림 바꾸기 확인판</title>
+  <link rel="stylesheet" href="css/style.css?v=1107g">
+  <style>
+    body { align-items: flex-start; }
+    .card { max-width: 1040px; text-align: left; padding: 28px; }
+    h1 { text-align: center; margin: 0 0 4px; }
+    .sub { text-align: center; margin: 0 0 14px; }
+    .rule {
+      background: #fff8e1; border-radius: 16px; padding: 12px 18px;
+      font-size: 14px; line-height: 1.7; margin-bottom: 18px;
+    }
+    .rule code { background: #fff; padding: 1px 6px; border-radius: 6px; font-weight: 800; }
+    h2 { font-size: 19px; margin: 22px 0 10px; }
+    .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 12px; }
+    .slot {
+      background: #faf8ff; border: 3px solid #efe9ff; border-radius: 16px;
+      padding: 10px 12px; font-size: 13px;
+    }
+    .slot.mine { border-color: #a8e6cf; background: #f1fbf5; }
+    .slot canvas {
+      width: 100%; height: 130px; display: block; border-radius: 10px;
+      background: repeating-conic-gradient(#f2eef8 0% 25%, #fff 0% 50%) 50% / 16px 16px;
+      margin-bottom: 6px;
+    }
+    .slot b { font-size: 15px; }
+    .file { font: 12px ui-monospace, monospace; color: #5a4fb0; word-break: break-all; }
+    .state { float: right; font-weight: 800; }
+    .size { color: var(--ink-soft); }
+    .foot { display: flex; gap: 10px; justify-content: center; margin-top: 22px; }
+  </style>
+</head>
+<body>
+<main class="card">
+  <h1>🎨 그림 바꾸기 확인판</h1>
+  <p class="sub"><b id="count">0</b>개를 우리 그림으로 바꿨어요!</p>
+
+  <div class="rule">
+    📁 <b>images</b> 폴더에 아래 <b>파일 이름 그대로</b> 그림을 넣으면 게임 그림이 바뀌어요.<br>
+    ✔️ <b>PNG</b>로 저장하기 (배경을 <b>투명</b>하게 하면 바닥이 비쳐서 예뻐요)<br>
+    ✔️ 파일 이름은 <b>영어 소문자</b> 그대로! 예) <code>hero-dayoung.png</code> (대문자·띄어쓰기·한글 ❌)<br>
+    ✔️ 적힌 크기는 '이 비율로 그리면 딱 맞는다'는 뜻이에요. 조금 달라도 찌그러지지 않게 맞춰 넣어줘요.<br>
+    ✔️ 친구 그림은 <b>오른쪽을 보는 모습</b>으로! 왼쪽으로 갈 땐 게임이 뒤집어 줘요.<br>
+    ✔️ 그림을 넣었는데 안 바뀌면 → <b>Ctrl+Shift+R</b> (맥은 <b>Cmd+Shift+R</b>)
+  </div>
+
+  <div id="groups"></div>
+
+  <div class="foot">
+    <a class="btn small" href="index.html">🎮 게임으로</a>
+  </div>
+</main>
+
+<script src="js/doodle.js?v=1107g"></script>
+<script src="js/skins.js?v=1107g"></script>
+<script src="js/characters.js?v=1107g"></script>
+<script src="js/furniture.js?v=1107g"></script>
+<script src="js/stages.js?v=1107g"></script>
+<script>
+/* -----------------------------------------------------------
+   가구마다 게임 안에서 실제로 몇×몇 크기로 쓰이는지 찾아보기
+   (그 비율로 3배 크게 그리면 깔끔해!)
+   ----------------------------------------------------------- */
+const furnitureSizes = {};
+for (const st of STAGES) for (const sec of st.sections) for (const o of (sec.objects || [])) {
+  const key = 'furniture-' + o.shape + '.png';
+  furnitureSizes[key] = furnitureSizes[key] || { w: o.w, h: o.h, sample: o };
+}
+
+/* 칸 만들기 */
+const groups = {};
+for (const s of SKIN_LIST) (groups[s.group] = groups[s.group] || []).push(s);
+
+const box = document.getElementById('groups');
+for (const [name, list] of Object.entries(groups)) {
+  box.insertAdjacentHTML('beforeend', '<h2>' + name + '</h2><div class="grid" data-g="' + name + '"></div>');
+  const grid = box.lastElementChild;
+  for (const s of list) {
+    const fs = furnitureSizes[s.file];
+    const size = s.size || (fs ? (fs.w * 3) + '×' + (fs.h * 3) : '자유');
+    grid.insertAdjacentHTML('beforeend',
+      '<div class="slot" id="slot-' + s.file + '">' +
+        '<canvas width="400" height="260"></canvas>' +
+        '<span class="state">✏️ 원래 그림</span>' +
+        '<b>' + s.label + '</b><br>' +
+        '<span class="file">' + s.file + '</span><br>' +
+        '<span class="size">추천 크기 ' + size + '</span>' +
+      '</div>');
+  }
+}
+
+/* 칸마다 지금 게임에서 쓰는 그림을 그려줘 (우리 그림 있으면 그걸로) */
+function showAll() {
+  let mine = 0;
+  for (const s of SKIN_LIST) {
+    const slot = document.getElementById('slot-' + s.file);
+    const cv = slot.querySelector('canvas');
+    const c = cv.getContext('2d');
+    c.clearRect(0, 0, cv.width, cv.height);
+    const art = skin(s.file);
+    if (art) mine++;
+    slot.classList.toggle('mine', !!art);
+    slot.querySelector('.state').textContent = art ? '✅ 우리 그림' : '✏️ 원래 그림';
+
+    const hero = HEROES.find(h => h.file === s.file);
+    const fs = furnitureSizes[s.file];
+    if (hero) {
+      drawGingerbread(c, 200, 245, 220, hero, {});
+    } else if (fs) {
+      const k = Math.min(260 / fs.w, 180 / fs.h);
+      c.save();
+      c.translate(200 - fs.w * k / 2, 130 - fs.h * k / 2);
+      c.scale(k, k);
+      drawFurniture(c, { ...fs.sample, x: 0, y: 0 }, 3);
+      c.restore();
+    } else if (art) {
+      drawSkinFit(c, art, 10, 10, 380, 240);
+    } else {
+      c.fillStyle = '#8b839c';
+      c.font = 'bold 22px sans-serif';
+      c.textAlign = 'center';
+      c.fillText('(게임 속 원래 그림)', 200, 138);
+    }
+  }
+  document.getElementById('count').textContent = mine;
+}
+
+showAll();
+onSkinLoad(showAll);   // 그림이 하나 도착할 때마다 다시 그려
+</script>
+</body>
+</html>

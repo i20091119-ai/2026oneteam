@@ -840,3 +840,16 @@
   color: #2b2530;
   box-shadow: inset 0 0 0 3px var(--hero-dark), 0 3px 0 var(--hero-dark);
 }
+
+/* ===========================================================
+   🎨 우리가 그린 시작 화면 배경 (images/start-bg.png 가 있을 때)
+   하늘·구름·언덕·잔디를 숨기고 그 그림을 화면 가득 깔아줘
+   =========================================================== */
+#screen-start.custom-bg {
+  background-size: cover;
+  background-position: center;
+}
+#screen-start.custom-bg .sky,
+#screen-start.custom-bg .cloud,
+#screen-start.custom-bg .hills,
+#screen-start.custom-bg .grass { display: none; }
