@@ -23,7 +23,8 @@ const ACTIONS = [
   'run',        // A / ✕  — 꾹 누르면 달리기
   'settings',   // B / ○  — 설정
   'pause',      // RT / R2 — 정지
-  'restart'     // LT / L2 — 다시하기
+  'restart',    // LT / L2 — 다시하기
+  'home'        // START / Esc — 🏠 시작 화면으로 (두 번 눌러야 나가요)
 ];
 
 
@@ -41,7 +42,8 @@ const PAD_BUTTONS = {
   4: 'item',      // LB / L1 아이템 사용
   5: 'crouch',    // RB / R1 웅크리기
   6: 'restart',   // LT / L2 다시하기
-  7: 'pause'      // RT / R2 정지
+  7: 'pause',     // RT / R2 정지
+  9: 'home'       // START 🏠 시작 화면으로
   // 십자패드(D-pad) 12~15번은 아래 '방향' 부분에서 스틱이랑 함께 읽어
   // (따로 읽었더니, 하나를 떼면 다른 하나를 누르고 있어도 멈춰버렸어!)
 };
@@ -90,7 +92,9 @@ const KEY_MAPS = [
 
 /* 누가 눌러도 되는 '모두의 키' — 설정, 정지, 다시하기 */
 const GLOBAL_KEYS = {
-  Escape: 'pause', KeyP: 'pause',
+  KeyP: 'pause',
+  Escape: 'home',          // 🏠 Esc 두 번 → 시작 화면
+  Backspace: 'home',       // 🏠 ⌫(delete) — 전체 화면에서는 Esc 를 브라우저가 가져가서 대신 써
   KeyR: 'restart',
   KeyO: 'settings'
 };

@@ -702,6 +702,34 @@ document.getElementById('hintBtn').addEventListener('click', () => {
 });
 
 
+/* -----------------------------------------------------------
+   🏠 게임하다가 시작 화면으로 돌아가기
+   학생들 요청: "게임하다가 홈으로 돌아가는 키가 있으면 좋겠어!"
+   실수로 눌러서 지금까지 한 게 날아가면 속상하니까 → 3초 안에 '두 번' 눌러야 나가!
+   (🕹️ START · ⌨️ Esc · 위쪽 🏠 버튼)
+   ----------------------------------------------------------- */
+let homeArmedAt = -Infinity;     // 아직 한 번도 안 누름
+function requestHome() {
+  if (game.screen !== 'game') return;
+  const now = performance.now();
+  if (now - homeArmedAt < 3000) {
+    homeArmedAt = -Infinity;
+    closeLock();
+    if (overlay.classList.contains('active')) closeOverlay();
+    game.paused = false;
+    document.getElementById('pauseBtn').textContent = '⏸️';
+    showScreen('start');
+    sound.select();
+    return;
+  }
+  homeArmedAt = now;
+  showToast('🏠 시작 화면으로 갈까요?\n3초 안에 한 번 더 누르면 나가요 (지금까지 한 것은 사라져요)');
+  game.toastTime = 180;
+  sound.select();
+}
+document.getElementById('homeHudBtn').addEventListener('click', requestHome);
+
+
 /* 세 친구 중 누구든 이 버튼을 '방금' 눌렀나? */
 function anyonePressed(action) {
   return input.players.some(pad => pad.isPressed(action));
@@ -1495,6 +1523,7 @@ function step(now) {
     if (anyonePressed('restart'))  restartStage();
     if (anyonePressed('settings')) openOverlay();
     if (anyonePressed('item'))     showHint();      // 💡 LB / Q / . / Y
+    if (anyonePressed('home'))     requestHome();   // 🏠 START / Esc (두 번)
   }
 
   // ⏸ 정지 중
@@ -1505,6 +1534,7 @@ function step(now) {
     draw();
     drawPauseBanner();
     if (anyonePressed('pause') || anyonePressed('jump') || anyonePressed('interact')) togglePause();
+    if (anyonePressed('home')) requestHome();
   }
 
   // ⏱ 시계 — 돌아가야 할 때만 시간을 더해줘
@@ -1536,7 +1566,7 @@ function drawPauseBanner() {
   ctx.strokeStyle = '#3a2f4a';
   ctx.lineWidth = 4;
   ctx.beginPath();
-  ctx.roundRect(CANVAS_W / 2 - 250, CANVAS_H / 2 - 80, 500, 160, 24);
+  ctx.roundRect(CANVAS_W / 2 - 260, CANVAS_H / 2 - 80, 520, 170, 24);
   ctx.fill();
   ctx.stroke();
 
@@ -1545,7 +1575,10 @@ function drawPauseBanner() {
   ctx.font = 'bold 40px sans-serif';
   ctx.fillText('⏸️ 잠깐 멈춤', CANVAS_W / 2, CANVAS_H / 2 - 15);
   ctx.font = 'bold 21px sans-serif';
-  ctx.fillText('🕹️ X 버튼 · RT 버튼  /  ⌨️ P 키  →  계속하기', CANVAS_W / 2, CANVAS_H / 2 + 40);
+  ctx.fillText('🕹️ X 버튼 · RT 버튼  /  ⌨️ P 키  →  계속하기', CANVAS_W / 2, CANVAS_H / 2 + 30);
+  ctx.font = 'bold 17px sans-serif';
+  ctx.fillStyle = '#6a6280';
+  ctx.fillText('🏠 시작 화면으로:  🕹️ START  /  ⌨️ Esc  (두 번 누르기)', CANVAS_W / 2, CANVAS_H / 2 + 60);
   ctx.restore();
 }
 
@@ -1709,7 +1742,7 @@ function updateLockInput() {
     if (pad.isPressed('up'))    { game.cursor = (game.cursor + 9)  % 12; drawCursor(); sound.select(); }
     if (pad.isPressed('down'))  { game.cursor = (game.cursor + 3)  % 12; drawCursor(); sound.select(); }
     if (pad.isPressed('interact') || pad.isPressed('jump')) pressKey(game.cursor);
-    if (pad.isPressed('pause')) closeLock();
+    if (pad.isPressed('pause') || pad.isPressed('home')) closeLock();
   }
 }
 
@@ -1791,6 +1824,7 @@ function updatePlayerBar() {
       '<div class="keys on">' +
         '<span class="lab">정지</span>' + cap('P') + cap('RT') +
         '<span class="lab">다시</span>' + cap('R') + cap('LT') +
+        '<span class="lab">🏠홈</span>' + cap('Esc') + cap('START') +
       '</div>' +
     '</div>';
 
@@ -1886,6 +1920,7 @@ function buildGuides() {
     ['A / ✕ (꾹)', '달리기'],
     ['B / ○',    '설정'],
     ['RT / R2',  '정지'],
+    ['START',    '🏠 시작 화면으로 (두 번 누르기)'],
     ['LT / L2',  '다시하기 (이 스테이지 처음부터)']
   ];
   document.getElementById('padGuide').innerHTML = padRows.map(
@@ -1901,7 +1936,8 @@ function buildGuides() {
     ['I J K L',      '🟡 다영 움직이기 (조이스틱 없을 때)'],
     ['H / U / Y',    '🟡 다영 점프 / 조사 / 💡힌트'],
     ['Shift (꾹)',   '달리기'],
-    ['P / Esc',      '정지'],
+    ['P',            '정지'],
+    ['Esc / ⌫',      '🏠 시작 화면으로 (두 번 누르기)'],
     ['R',            '다시하기 (이 스테이지 처음부터)']
   ];
   document.getElementById('keyGuide').innerHTML = keyRows.map(
