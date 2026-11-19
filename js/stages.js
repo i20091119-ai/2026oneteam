@@ -57,7 +57,8 @@ function roomWalls(x, y, w, h, t = 24) {
 const STAGES = [
   {
     name: '✈️ 비행기',
-    art: 'plane',      // 🎨 그림 이름표 (images/floor-plane.png 처럼 쓰여)
+    art: 'plane',
+    music: 'plane',    // 🎵 배경음악 (js/audio.js 의 SONGS)      // 🎨 그림 이름표 (images/floor-plane.png 처럼 쓰여)
     timeLimit: 90,               // ⚠️ 몇 초로 할지 아직 안 정했어! (지금은 90초)
 
     // 비행기 안(기내)처럼 꾸몄어!
@@ -325,7 +326,8 @@ const STAGES = [
      =========================================================== */
   {
     name: '🏫 폐교',
-    art: 'school',     // 🎨 그림 이름표 (images/floor-school.png 처럼 쓰여)
+    art: 'school',
+    music: 'school',   // 🎵 배경음악     // 🎨 그림 이름표 (images/floor-school.png 처럼 쓰여)
     timeLimit: 120,              // ⚠️ 몇 초로 할지 아직 안 정했어! (지금 120초)
 
     theme: {

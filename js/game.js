@@ -144,6 +144,7 @@ function loadSection() {
   game.solved = new Set();               // 이 방에서 푼 발판 퍼즐 목록
   fx.clear();
   seatPassengers(sec);                   // 🧑 승객들 자리 잡기
+  sound.music(currentStage().music || 'title');   // 🎵 스테이지 배경음악
 
   game.players = HEROES.map((hero, i) => {
     const sp = sec.spawns[i] || sec.spawns[0];
@@ -537,7 +538,10 @@ function clearStage() {
   const earned = game.elapsed <= limit ? 2 : 1;
   game.stars += earned;
 
+  // 🎵 배경음악을 멈추고 축하 소리 → 잠시 뒤 시작 화면 음악
+  sound.music(null);
   sound.clear();
+  setTimeout(() => { if (game.screen === 'clear') sound.music('title'); }, 2200);
 
   // 다음 스테이지가 남아 있나?
   const hasNext = game.stageIndex + 1 < STAGES.length;
@@ -2207,6 +2211,7 @@ function updateOverlayInput() {
 const _showScreen = showScreen;
 showScreen = function (name) {
   _showScreen(name);
+  if (name === 'start') sound.music('title');      // 🎵 시작 화면 음악
   menuIndex = 0;
   // 화면이 다 그려진 다음에 표시해야 '보이는 버튼'을 제대로 찾을 수 있어
   setTimeout(paintMenuCursor, 0);
@@ -2225,6 +2230,11 @@ for (const ids of Object.values(MENUS)) {
 }
 
 paintMenuCursor();
+
+// 🎵 시작 화면 음악 — 브라우저 규칙상 처음 한 번 누르거나 클릭해야 소리가 나
+sound.music('title');
+window.addEventListener('pointerdown', () => sound.wake());
+window.addEventListener('keydown',     () => sound.wake());
 
 
 /* ===========================================================
