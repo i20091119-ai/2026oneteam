@@ -871,3 +871,26 @@
 .hint-btn b { background: #f2c14e; color: #fff; border-radius: 999px; padding: 0 7px; margin-left: 2px; }
 .hint-btn:active { transform: translateY(2px); box-shadow: 0 1px 0 #e8cf6a; }
 .clue.tip { background: #fff8d6; box-shadow: inset 0 0 0 2px #f2d16b; }
+
+/* ===========================================================
+   🎬 엔딩 화면
+   =========================================================== */
+#screen-ending {
+  position: fixed; inset: 0;
+  background: linear-gradient(#2a1d5c, #5b3f8f);
+  flex-direction: column; align-items: center; justify-content: center;
+  gap: 12px; padding: 16px;
+}
+#screen-ending.active { display: flex; }
+#endingCanvas {
+  width: min(92vw, calc((100vh - 320px) * 16 / 9)); height: auto;
+  border-radius: 22px; box-shadow: 0 10px 40px rgba(0,0,0,.35);
+}
+.end-box {
+  width: min(92vw, 900px); text-align: center; color: #fff;
+}
+.end-who { font-weight: 900; font-size: 18px; color: #ffe27a; min-height: 24px; }
+.end-text { font-size: clamp(18px, 2.4vw, 26px); font-weight: 800; line-height: 1.5; margin: 4px 0 8px; }
+.end-stats { font-size: 17px; margin-bottom: 8px; color: #e9e2ff; }
+.end-stats small { color: #c9bfe8; }
+.end-tip { font-size: 13px; color: #c9bfe8; margin: 6px 0 0; }

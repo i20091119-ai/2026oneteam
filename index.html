@@ -11,8 +11,8 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>🍪 우리 함께 GO!</title>
-  <link rel="stylesheet" href="css/style.css?v=1119d">
-  <link rel="stylesheet" href="css/game.css?v=1119d">
+  <link rel="stylesheet" href="css/style.css?v=1119e">
+  <link rel="stylesheet" href="css/game.css?v=1119e">
 </head>
 <body class="game-body">
 
@@ -60,7 +60,7 @@
   <!-- 조종기로 어떻게 고르는지 알려주는 안내 (깜빡깜빡) -->
   <p class="press-hint">🕹️ 스틱으로 고르고 <b>X 버튼</b>으로 시작!</p>
 
-  <p class="made-by">원팀 · 김세은 강다영 황태준 <small class="ver">v1119d</small></p>
+  <p class="made-by">원팀 · 김세은 강다영 황태준 <small class="ver">v1119e</small></p>
 </section>
 
 
@@ -141,10 +141,31 @@
     <p class="clear-time" id="clearTime">걸린 시간 0.0초</p>
 
     <div class="start-buttons">
+      <button class="btn big" id="endingBtn">🎬 엔딩 보기</button>
       <button class="btn big" id="nextBtn">▶ 다음 스테이지</button>
       <button class="btn ghost" id="againBtn">🔁 처음부터</button>
       <button class="btn ghost" id="homeBtn">🏠 시작 화면</button>
     </div>
+  </div>
+</section>
+
+
+<!-- ==================== ④ 엔딩 화면 🎬 ====================
+     마지막 스테이지를 탈출하면 마법사가 나타나서 세 친구를 풀어줘!
+     (이야기 글은 js/ending.js 의 ENDING 에서 고칠 수 있어)
+     ==================================================== -->
+<section class="screen" id="screen-ending">
+  <canvas id="endingCanvas" width="960" height="540"></canvas>
+  <div class="end-box">
+    <div class="end-who" id="endWho"></div>
+    <div class="end-text" id="endText"></div>
+    <div class="end-stats" id="endStats"></div>
+    <div class="start-buttons">
+      <button class="btn big" id="endNext">▶ 다음</button>
+      <button class="btn big" id="endAgain">🔁 처음부터</button>
+      <button class="btn ghost" id="endHome">🏠 시작 화면</button>
+    </div>
+    <p class="end-tip">🕹️ X 버튼 · ⌨️ Space / Enter · 🖱️ 클릭으로 넘겨요</p>
   </div>
 </section>
 
@@ -181,14 +202,15 @@
 
 
 <!-- 게임을 움직이는 부품들을 순서대로 불러와 -->
-<script src="js/input.js?v=1119d"></script>
-<script src="js/audio.js?v=1119d"></script>
-<script src="js/doodle.js?v=1119d"></script>
-<script src="js/particles.js?v=1119d"></script>
-<script src="js/skins.js?v=1119d"></script>
-<script src="js/characters.js?v=1119d"></script>
-<script src="js/furniture.js?v=1119d"></script>
-<script src="js/stages.js?v=1119d"></script>
-<script src="js/game.js?v=1119d"></script>
+<script src="js/input.js?v=1119e"></script>
+<script src="js/audio.js?v=1119e"></script>
+<script src="js/doodle.js?v=1119e"></script>
+<script src="js/particles.js?v=1119e"></script>
+<script src="js/skins.js?v=1119e"></script>
+<script src="js/characters.js?v=1119e"></script>
+<script src="js/furniture.js?v=1119e"></script>
+<script src="js/stages.js?v=1119e"></script>
+<script src="js/game.js?v=1119e"></script>
+<script src="js/ending.js?v=1119e"></script>
 </body>
 </html>

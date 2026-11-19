@@ -94,6 +94,7 @@ function startGame() {
   game.stars = 0;
   game.paused = false;
   game.elapsed = 0;
+  game.totalTime = 0;
 
   // 단서 수첩을 비우고, 조사했던 표시도 모두 지워
   game.clues = [];
@@ -537,6 +538,7 @@ function clearStage() {
   const limit  = stage.timeLimit || 60;
   const earned = game.elapsed <= limit ? 2 : 1;
   game.stars += earned;
+  game.totalTime = (game.totalTime || 0) + game.elapsed;   // 엔딩에서 보여줄 '모두 합친 시간'
 
   // 🎵 배경음악을 멈추고 축하 소리 → 잠시 뒤 시작 화면 음악
   sound.music(null);
@@ -559,6 +561,8 @@ function clearStage() {
 
   // 다음 스테이지가 있으면 '다음' 버튼을 보여줘
   document.getElementById('nextBtn').style.display = hasNext ? '' : 'none';
+  // 마지막 스테이지까지 탈출했으면 🎬 엔딩 보기!
+  document.getElementById('endingBtn').style.display = hasNext ? 'none' : '';
 
   showScreen('clear');
   startFireworks();
@@ -958,12 +962,24 @@ function drawWindows(theme, sec) {
     ctx.fillStyle = sky;
     ctx.fillRect(cx - R, cy - R, R * 2, R * 2);
 
-    // ③ 창밖으로 흘러가는 구름 (창문마다 속도가 조금씩 달라)
-    ctx.fillStyle = 'rgba(255,255,255,.85)';
-    const speed = 0.020 + (i % 3) * 0.007;
-    const cloudX = cx - R + ((game.time * speed + i * 40) % (R * 2 + 26));
-    wobbleCircle(ctx, cloudX,     cy + 3, 8, i * 5 + 611, 0.25); ctx.fill();
-    wobbleCircle(ctx, cloudX + 9, cy - 2, 10, i * 5 + 613, 0.25); ctx.fill();
+    if (theme.stars) {
+      // ③ 🚀 우주선 창밖 — 반짝이는 별들이 천천히 흘러가
+      for (let k = 0; k < 5; k++) {
+        const sx = cx - R + ((game.time * 0.008 + k * 9 + i * 13) % (R * 2));
+        const sy = cy - R + ((k * 37 + i * 11) % (R * 2));
+        ctx.globalAlpha = 0.5 + 0.5 * Math.sin(game.time * 0.004 + k + i);
+        ctx.fillStyle = k === 2 ? '#ffe27a' : '#ffffff';
+        ctx.fillRect(sx, sy, 2.5, 2.5);
+      }
+      ctx.globalAlpha = 1;
+    } else {
+      // ③ 창밖으로 흘러가는 구름 (창문마다 속도가 조금씩 달라)
+      ctx.fillStyle = 'rgba(255,255,255,.85)';
+      const speed = 0.020 + (i % 3) * 0.007;
+      const cloudX = cx - R + ((game.time * speed + i * 40) % (R * 2 + 26));
+      wobbleCircle(ctx, cloudX,     cy + 3, 8, i * 5 + 611, 0.25); ctx.fill();
+      wobbleCircle(ctx, cloudX + 9, cy - 2, 10, i * 5 + 613, 0.25); ctx.fill();
+    }
 
     ctx.restore();
 
@@ -2130,7 +2146,8 @@ document.addEventListener('fullscreenchange', () => {
 // 화면마다 고를 수 있는 버튼 목록
 const MENUS = {
   start: ['startBtn', 'settingsBtn'],
-  clear: ['nextBtn', 'againBtn', 'homeBtn']
+  clear: ['endingBtn', 'nextBtn', 'againBtn', 'homeBtn'],
+  ending: ['endNext', 'endAgain', 'endHome']
 };
 
 let menuIndex = 0;      // 지금 고르고 있는 버튼 번호

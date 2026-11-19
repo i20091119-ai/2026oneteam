@@ -40,6 +40,7 @@ const SKIN_LIST = [
   { group: '물건', file: 'window-plane.png',  label: '✈️ 비행기 창문 (동그란 창)', size: '120×120' },
   { group: '물건', file: 'window-school.png', label: '🏫 교실 창문 (네모난 창)',   size: '138×102' },
   { group: '물건', file: 'passenger.png',    label: '🧑 좌석에 앉은 승객 (위에서 본 모습)', size: '120×120' },
+  { group: '친구', file: 'wizard.png',       label: '🧙 마법사 (엔딩에 나와요)', size: '200×300' },
   { group: '물건', file: 'password.png',     label: '🔐 비밀번호 창 그림 (자물쇠 창 위에 나와요)', size: '640×170' },
 
   // 🪑 가구 — 위에서 내려다본 모습
@@ -74,7 +75,17 @@ const SKIN_LIST = [
   { group: '두 번째 · 스테이지 전용', file: 'furniture-chair-plane.png',  label: '✈️ 기장 의자' },
   { group: '두 번째 · 스테이지 전용', file: 'furniture-chair-school.png', label: '🏫 교실 의자' },
   { group: '두 번째 · 스테이지 전용', file: 'furniture-plant-2.png',      label: '🪴 복도 화분 (두 번째 화분)' },
-  { group: '두 번째 · 스테이지 전용', file: 'furniture-bag-2.png',        label: '💼 기장 가방 (두 번째 가방)' }
+  { group: '두 번째 · 스테이지 전용', file: 'furniture-bag-2.png',        label: '💼 기장 가방 (두 번째 가방)' },
+
+  // 🚀 우주선 스테이지
+  { group: '🚀 우주선', file: 'floor-space.png',             label: '🚀 우주선 바닥', size: '960×540' },
+  { group: '🚀 우주선', file: 'window-space.png',            label: '🚀 우주선 창문 (유리는 투명하게 → 별이 보여요)', size: '120×120' },
+  { group: '🚀 우주선', file: 'door-exit-space.png',         label: '🚀 우주선 출구 문' },
+  { group: '🚀 우주선', file: 'furniture-locker-space.png',  label: '🚀 우주복 사물함' },
+  { group: '🚀 우주선', file: 'furniture-cabinet-space.png', label: '🚀 공기 정화기 · 물 재활용기' },
+  { group: '🚀 우주선', file: 'furniture-board-space.png',   label: '🚀 별자리 지도 · 기록판' },
+  { group: '🚀 우주선', file: 'furniture-cart-space.png',    label: '🚀 로봇 카트' },
+  { group: '🚀 우주선', file: 'furniture-chair-space.png',   label: '🚀 함장 의자' }
 ];
 
 // 불러오기에 성공한 그림만 여기에 들어가 (파일 이름 → 그림)
