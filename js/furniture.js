@@ -17,8 +17,14 @@
    o.shape 에 적힌 이름을 보고 알맞은 그림을 골라 그려줘
    ----------------------------------------------------------- */
 function drawFurniture(ctx, o, seed) {
-  // 🎨 우리가 그린 가구 그림이 있으면 그걸 써 (images/furniture-이름.png)
-  const art = skin('furniture-' + o.shape + '.png');
+  // 🎨 우리가 그린 가구 그림이 있으면 그걸 써. 찾는 순서:
+  //   ① look 이 적힌 가구 → furniture-이름-2.png
+  //   ② 지금 스테이지 전용 → furniture-이름-plane.png / -school.png
+  //   ③ 모두 같이 쓰는 그림 → furniture-이름.png
+  const stageArt = (typeof game !== 'undefined' && typeof currentStage === 'function') ? currentStage().art : null;
+  const art = (o.look && skin('furniture-' + o.shape + '-' + o.look + '.png')) ||
+              (stageArt && skin('furniture-' + o.shape + '-' + stageArt + '.png')) ||
+              skin('furniture-' + o.shape + '.png');
   if (art) { drawSkinFit(ctx, art, o.x, o.y, o.w, o.h); return; }
 
   const f = FURNITURE[o.shape] || FURNITURE.box;
@@ -314,8 +320,16 @@ const PASSENGERS = [
 ];
 
 function drawPassenger(ctx, o, seed) {
-  const art = skin('passenger.png');
-  if (art) { drawSkinFit(ctx, art, o.x + 2, o.y + 2, o.w - 4, o.h - 2); return; }
+  // 🎨 우리가 그린 승객 (passenger.png, passenger-2.png …) — 여러 장이면 번갈아 나와
+  const arts = ['passenger.png', 'passenger-2.png', 'passenger-3.png', 'passenger-4.png'].map(skin).filter(Boolean);
+  if (arts.length) {
+    // 학생들 그림은 좌석까지 같이 그려져 있어서, 좌석 너비에 맞추고 위쪽을 맞춰 그려
+    // (다리는 좌석 아래로 살짝 내려와도 괜찮아!)
+    const a = arts[o.sitter % arts.length];
+    const h = o.w * a.height / a.width;
+    ctx.drawImage(a, o.x, o.y, o.w, h);
+    return;
+  }
 
   const P = PASSENGERS[o.sitter % PASSENGERS.length];
   const { x, y, w, h } = o;

@@ -853,3 +853,7 @@
 #screen-start.custom-bg .cloud,
 #screen-start.custom-bg .hills,
 #screen-start.custom-bg .grass { display: none; }
+
+/* 🎨 비밀번호 창에 들어가는 우리 그림 (images/password.png) */
+.lock-art { display: block; max-width: 240px; width: 70%; margin: 2px auto 10px; }
+.lock-art[hidden] { display: none; }

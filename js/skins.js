@@ -40,6 +40,7 @@ const SKIN_LIST = [
   { group: '물건', file: 'window-plane.png',  label: '✈️ 비행기 창문 (동그란 창)', size: '120×120' },
   { group: '물건', file: 'window-school.png', label: '🏫 교실 창문 (네모난 창)',   size: '138×102' },
   { group: '물건', file: 'passenger.png',    label: '🧑 좌석에 앉은 승객 (위에서 본 모습)', size: '120×120' },
+  { group: '물건', file: 'password.png',     label: '🔐 비밀번호 창 그림 (자물쇠 창 위에 나와요)', size: '640×170' },
 
   // 🪑 가구 — 위에서 내려다본 모습
   { group: '가구', file: 'furniture-seat.png',    label: '💺 비행기 좌석' },
@@ -56,7 +57,24 @@ const SKIN_LIST = [
   { group: '가구', file: 'furniture-cup.png',     label: '컵' },
   { group: '가구', file: 'furniture-cart.png',    label: '서비스 카트' },
   { group: '가구', file: 'furniture-panel.png',   label: '계기판' },
-  { group: '가구', file: 'furniture-clock.png',   label: '시계' }
+  { group: '가구', file: 'furniture-clock.png',   label: '시계' },
+
+  // 🎭 두 번째 그림 · 스테이지 전용 그림
+  //   furniture-이름-plane.png  → ✈️ 비행기에서만 쓰여 (예: 비행일지)
+  //   furniture-이름-school.png → 🏫 폐교에서만 쓰여 (예: 칠판)
+  //   furniture-이름-2.png      → stages.js 에서 look: 2 라고 적은 가구에 쓰여
+  //   passenger-2.png …         → 승객이 여러 모습으로 번갈아 나와
+  { group: '두 번째 · 스테이지 전용', file: 'passenger-2.png',            label: '🧑 승객 2' },
+  { group: '두 번째 · 스테이지 전용', file: 'passenger-3.png',            label: '🧑 승객 3' },
+  { group: '두 번째 · 스테이지 전용', file: 'passenger-4.png',            label: '🧑 승객 4' },
+  { group: '두 번째 · 스테이지 전용', file: 'door-exit-plane.png',        label: '✈️ 비행기 출구 문' },
+  { group: '두 번째 · 스테이지 전용', file: 'door-exit-school.png',       label: '🏫 폐교 출구 문' },
+  { group: '두 번째 · 스테이지 전용', file: 'furniture-board-plane.png',  label: '✈️ 비행일지 판' },
+  { group: '두 번째 · 스테이지 전용', file: 'furniture-board-school.png', label: '🏫 칠판 · 게시판' },
+  { group: '두 번째 · 스테이지 전용', file: 'furniture-chair-plane.png',  label: '✈️ 기장 의자' },
+  { group: '두 번째 · 스테이지 전용', file: 'furniture-chair-school.png', label: '🏫 교실 의자' },
+  { group: '두 번째 · 스테이지 전용', file: 'furniture-plant-2.png',      label: '🪴 복도 화분 (두 번째 화분)' },
+  { group: '두 번째 · 스테이지 전용', file: 'furniture-bag-2.png',        label: '💼 기장 가방 (두 번째 가방)' }
 ];
 
 // 불러오기에 성공한 그림만 여기에 들어가 (파일 이름 → 그림)

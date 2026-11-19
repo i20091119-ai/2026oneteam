@@ -1292,7 +1292,8 @@ function drawLockHint(L) {
 
 /* 대충 그린 문 🚪 */
 function drawDoor(d) {
-  const doorArt = skin('door-exit.png');  // 🎨 우리가 그린 문이 있으면
+  // 🎨 우리가 그린 문이 있으면 (스테이지 전용 문이 먼저: door-exit-plane.png)
+  const doorArt = skin('door-exit-' + currentStage().art + '.png') || skin('door-exit.png');
   if (doorArt) { drawSkinFit(ctx, doorArt, d.x, d.y, d.w, d.h); return; }
   ctx.save();
   ctx.lineWidth = 3.5;
@@ -1502,6 +1503,11 @@ function openKeypad(opts) {
   game.keyOnSolve = opts.onSolve;      // 맞으면 할 일
   game.paused = true;
   document.getElementById('lockTitle').textContent = opts.title;
+  // 🎨 마지막 자물쇠일 때만 우리가 그린 비밀번호 그림을 보여줘
+  const lockArt = document.getElementById('lockArt');
+  const pw = opts.art && skin('password.png');
+  if (pw) lockArt.src = pw.src;
+  lockArt.hidden = !pw;
   lockOverlay.classList.add('active');
   buildKeypad();
   drawPassword();
@@ -1515,7 +1521,8 @@ function openLock() {
     title: '🔒 비밀번호 ' + sec.password.length + '자리',
     len: sec.password.length,
     answer: sec.password,
-    onSolve: clearStage                // 탈출 성공! 🎉
+    onSolve: clearStage,               // 탈출 성공! 🎉
+    art: true                          // 🎨 password.png 그림 보여주기
   });
 }
 

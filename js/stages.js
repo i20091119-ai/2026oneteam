@@ -274,7 +274,7 @@ const STAGES = [
             question: '세 자리 수 중에서\n각 자리 숫자가 모두 다르면서\n가장 작은 수는?' },
           { x: 140, y: 330, w: 46, h: 46, shape: 'trash', name: '휴지통',     kind: 'empty' },
           { x: 460, y: 340, w: 46, h: 46, shape: 'cup',   name: '식은 커피',  kind: 'empty' },
-          { x: 300, y: 390, w: 54, h: 54, shape: 'bag',   name: '기장 가방',  kind: 'empty' },
+          { x: 300, y: 390, w: 54, h: 54, shape: 'bag',   name: '기장 가방', look: 2,  kind: 'empty' },
           { x: 650, y: 110, w: 52, h: 52, shape: 'chair', name: '기장 의자',  kind: 'empty' },
           { x: 760, y: 110, w: 56, h: 56, shape: 'box',   name: '공구 상자',  kind: 'empty' },
           { x: 650, y: 400, w: 54, h: 54, shape: 'books', name: '설명서 더미', kind: 'empty' }
@@ -481,7 +481,7 @@ const STAGES = [
           // 그 밖의 것들
           { x: 230, y: 284, w: 46, h: 46, shape: 'trash', name: '쓰레기통',   kind: 'empty' },
           { x: 640, y: 96,  w: 84, h: 56, shape: 'board', name: '게시판',     kind: 'empty' },
-          { x: 680, y: 260, w: 50, h: 50, shape: 'plant', name: '복도 화분',  kind: 'empty' },
+          { x: 680, y: 260, w: 50, h: 50, shape: 'plant', name: '복도 화분', look: 2,  kind: 'empty' },
           { x: 820, y: 380, w: 50, h: 50, shape: 'books', name: '헌 책 더미', kind: 'empty' }
         ],
 

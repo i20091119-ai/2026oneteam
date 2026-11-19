@@ -30,4 +30,19 @@
 | 🧑 좌석에 앉은 승객 | `passenger.png` | 120×120 |
 | 🪑 가구 (위에서 본 모습) | `furniture-seat.png`, `furniture-desk.png`, `furniture-chair.png`, `furniture-locker.png`, `furniture-cabinet.png`, `furniture-board.png`, `furniture-books.png`, `furniture-plant.png`, `furniture-trash.png`, `furniture-box.png`, `furniture-bag.png`, `furniture-cup.png`, `furniture-cart.png`, `furniture-panel.png`, `furniture-clock.png` | 확인판에 적혀 있어요 |
 
+## 🎭 두 번째 그림 · 스테이지 전용 그림
+| 이렇게 이름 붙이면 | 이렇게 쓰여요 |
+|---|---|
+| `furniture-이름-plane.png` | ✈️ 비행기에서만 (예: `furniture-board-plane.png` = 비행일지) |
+| `furniture-이름-school.png` | 🏫 폐교에서만 (예: `furniture-board-school.png` = 칠판) |
+| `furniture-이름-2.png` | `stages.js`에서 `look: 2` 라고 적은 가구 (지금: 기장 가방, 복도 화분) |
+| `door-exit-plane.png` / `door-exit-school.png` | 스테이지마다 다른 출구 문 |
+| `passenger-2.png` ~ `passenger-4.png` | 승객이 여러 모습으로 번갈아 앉아요 |
+| `password.png` | 마지막 🔒 비밀번호 창 위에 나오는 그림 |
+
+## 🖌️ 지금 들어 있는 그림 (2026-11-19, 원팀이 Canva로 만든 그림 25장)
+- 흰 배경을 지우고(투명), 그림 위 이름 글씨를 빼고, 게임에 맞는 크기로 줄였어요.
+- 친구 옷 색은 게임의 문·버튼 색에 맞게 바꿨어요: 세은 멜빵바지 → 🟢연두, 다영 멜빵바지 → 🟡노랑, 태준 티셔츠 → 🔴빨강
+- 인터넷에서 가져온 그림이 있다면 어디서 가져왔는지 여기에 적어 두세요: (출처: )
+
 > 바닥 그림 위에 **벽은 게임이 따로 그려요** (부딪히는 곳이라서). 바닥 그림에는 벽을 안 그려도 돼요.
