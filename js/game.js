@@ -395,6 +395,7 @@ function updateDoors(sec) {
       } else {
         sound.shut();
         fx.dust(d.x + d.w / 2, d.y + d.h, 8, HEROES[d.color].color);
+        pushOutOfDoor(d);
       }
     }
 
@@ -435,9 +436,18 @@ function checkInteract(sec) {
     if (!pad.isPressed('interact')) continue;
 
     // --- 사물 조사 ---
+    // 우선순위: 아직 안 뒤진 가구 → 🔢 숫자 장치 → 🔒 자물쇠 → 이미 뒤진 가구
+    // (예전엔 이미 뒤진 좌석 옆에 장치가 있으면 '이미 찾아봤어요!'만 나오고 장치가 안 열렸어)
+    // 여러 가구가 닿으면 '내 몸에서 제일 가까운 것'부터 (사물함처럼 붙어 있을 때 헷갈리지 않게)
+    const dist = o => Math.hypot(o.x + o.w / 2 - p.x, o.y + o.h / 2 - (p.y - P_H / 2));
+    const nearObjs = (sec.objects || []).filter(o => hitBox(p, P_H, o)).sort((a, b) => dist(a) - dist(b));
+    const fresh = nearObjs.filter(o => !o.taken);
+    const nearDevice = (sec.puzzles || []).some(pz => pz.type === 'device' && !game.solved.has(pz.id) && hitBox(p, P_H, pz.at));
+    const nearLock = sec.lock && hitBox(p, P_H, sec.lock);
+    const candidates = fresh.length ? fresh : (nearDevice || nearLock) ? [] : nearObjs;
+
     let found = false;
-    for (const obj of (sec.objects || [])) {
-      if (!hitBox(p, P_H, obj)) continue;          // 가까이 있지 않으면 건너뛰어
+    for (const obj of candidates) {
       found = true;
 
       // obj.color 가 null 이면 누구나 조사할 수 있어.
@@ -507,6 +517,22 @@ function checkInteract(sec) {
 }
 
 /* --- 출구: 세 친구가 모두 모이면 다음 구역으로! --- */
+/* 🚪 문이 닫힐 때 문 안에 서 있던 친구는 가까운 쪽으로 밀어내 줘
+   (예전엔 문 속에 갇혀서, 오른쪽을 누르면 오히려 왼쪽으로 튕겨 나갔어!) */
+function pushOutOfDoor(d) {
+  for (const p of game.players) {
+    if (!hitBox(p, ROOM_FOOT, d)) continue;
+    if (d.h >= d.w) {                      // 세로로 긴 문 → 왼쪽 또는 오른쪽으로
+      const toLeft = p.x < d.x + d.w / 2;
+      p.x = toLeft ? d.x - P_W / 2 - 1 : d.x + d.w + P_W / 2 + 1;
+    } else {                               // 가로로 긴 문 → 위 또는 아래로
+      const toUp = p.y - ROOM_FOOT / 2 < d.y + d.h / 2;
+      p.y = toUp ? d.y - 1 : d.y + d.h + ROOM_FOOT + 1;
+    }
+    fx.dust(p.x, p.y, 6);
+  }
+}
+
 function checkExit(sec) {
   let allAtExit = true;
   for (const p of game.players) {
