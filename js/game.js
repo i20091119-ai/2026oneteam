@@ -413,7 +413,9 @@ function checkSpikes(sec) {
   for (const p of game.players) {
     if (p.hurt > 0) continue;                 // 방금 다쳤으면 잠깐 봐줘
     for (const s of sec.spikes) {
-      if (hitBox(p, p.crouch ? P_H_CROUCH : P_H, s)) { respawn(p, sec); break; }
+      // 방(위에서 보기)에서는 '발'이 가시를 밟아야 함정! (예전엔 머리만 스쳐도 처음 자리로 갔어)
+      const h = sec.type === 'room' ? ROOM_FOOT : (p.crouch ? P_H_CROUCH : P_H);
+      if (hitBox(p, h, s)) { respawn(p, sec); break; }
     }
   }
 }
@@ -2299,8 +2301,8 @@ window.addEventListener('keydown',     () => sound.wake());
    =========================================================== */
 
 // 숫자 칸 하나의 크기와 사이 간격
-const TILE = 34;
-const TILE_GAP = 5;
+const TILE = 30;       // (34 → 30: 칸 둘레에 걸어갈 자리를 넉넉하게)
+const TILE_GAP = 6;
 
 /* 숫자 d 칸이 어디에 있는지 계산해줘
    (위 줄: 0 1 2 3 4 / 아래 줄: 5 6 7 8 9) */

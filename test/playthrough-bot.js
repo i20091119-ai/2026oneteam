@@ -228,13 +228,13 @@
   const SOLVE = {
     '기내 통로': async () => {
       await collect(0, '서비스 카트');
+      await tileStep(2, 'r1', 6);                           // 숫자 칸은 왼쪽 칸에 있어
+      await until(() => game.solved.has('r1'), '발판 r1', 5); log('  🟨 숫자 칸 6 → 발판!');
       await hold(1, 1);                                     // 다영 노랑 버튼
       goTo(0, area(500, 680, 300, 360)); goTo(2, area(500, 680, 300, 360));
       await until(() => goals[0].done && goals[2].done, '세은·태준 건너기');
       await hold(0, 0);                                     // 세은 초록 버튼
       await reach(1, area(500, 680, 300, 360), '다영 건너기');
-      await tileStep(2, 'r1', 6);
-      await until(() => game.solved.has('r1'), '발판 r1', 5); log('  🟨 숫자 칸 6 → 발판!');
       await exitAll();
     },
     '흔들리는 객실': async () => {

@@ -96,7 +96,7 @@ const STAGES = [
         hints: [
           '🔍 가구를 하나씩 조사(Y)해 봐요. 문제가 적힌 쪽지가 숨어 있어요!\n색깔 문은 같은 색 친구가 같은 색 버튼을 밟고 있어야 열려요.',
           '🛒 서비스 카트 문제: 바퀴를 세기 전에 엔진이 모두 몇 개인지부터 세어 보세요.\n(날개 2개, 날개마다 엔진 2개)',
-          '🟨 답을 구했으면 강 앞 숫자 칸 중에서 그 숫자 칸 하나만 밟아요.\n틀린 칸을 밟으면 방 처음 자리로 돌아가요!'
+          '🟨 답을 구했으면 왼쪽 칸의 숫자 칸 중에서 그 숫자 칸 하나만 밟아요.\n틀린 칸을 밟으면 방 처음 자리로 돌아가요!'
         ],
 
         walls: roomWalls(120, 60, 720, 420).concat([
@@ -126,11 +126,12 @@ const STAGES = [
         ],
         // 🟨 발판 퍼즐 — 정답 칸 하나를 밟아
         puzzles: [
-          { id: 'r1', type: 'tile', answer: 6, tiles: { x: 498, y: 376 } }
+          // 숫자 칸은 넓은 왼쪽 칸 한가운데! (사방에 걸어갈 자리가 있어서 어느 칸이든 다른 칸을 안 밟고 갈 수 있어)
+          { id: 'r1', type: 'tile', answer: 6, tiles: { x: 170, y: 280 } }
         ],
 
         spikes: [
-          { x: 320, y: 300, w: 110, h: 44 }             // 🪤 왼쪽 가시
+          { x: 290, y: 176, w: 100, h: 40 }             // 🪤 왼쪽 가시
         ],
 
         objects: [
@@ -138,8 +139,8 @@ const STAGES = [
             kind: 'quiz', answer: 6, tag: '🟨 발판',
             question: '비행기 날개는 2개, 날개마다 엔진이 2개씩 있어요.\n바퀴는 엔진 수보다 2개 더 많아요.\n바퀴는 모두 몇 개일까요?' },
           { x: 300, y: 110, w: 56, h: 56, shape: 'box',   name: '기내 짐칸',    kind: 'empty' },
-          { x: 380, y: 210, w: 46, h: 46, shape: 'trash', name: '쓰레기통',     kind: 'empty' },
-          { x: 360, y: 390, w: 54, h: 54, shape: 'bag',   name: '두고 간 가방', kind: 'empty' },
+          { x: 400, y: 116, w: 46, h: 46, shape: 'trash', name: '쓰레기통',     kind: 'empty' },
+          { x: 380, y: 390, w: 54, h: 54, shape: 'bag',   name: '두고 간 가방', kind: 'empty' },
           { x: 520, y: 100, w: 56, h: 56, shape: 'box',   name: '구급 상자',    kind: 'empty' },
           { x: 760, y: 140, w: 46, h: 46, shape: 'trash', name: '휴지통',       kind: 'empty' }
         ],

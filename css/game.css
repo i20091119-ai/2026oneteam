@@ -86,7 +86,7 @@
   left: 50%;
   transform: translateX(-50%);
   z-index: 2;
-  width: min(88vw, 760px);
+  width: min(88vw, 760px, 74vh);   /* 화면이 낮으면 조금 작게 (이름표가 '시작' 글씨를 가리지 않게) */
   height: auto;
   pointer-events: none;      /* 그림이 버튼 클릭을 막지 않게 */
 }
@@ -894,3 +894,22 @@
 .end-stats { font-size: 17px; margin-bottom: 8px; color: #e9e2ff; }
 .end-stats small { color: #c9bfe8; }
 .end-tip { font-size: 13px; color: #c9bfe8; margin: 6px 0 0; }
+
+/* 🏫 시작 화면 오른쪽 위 — 영재교육원 이름과 만든 사람 */
+.org-badge {
+  position: absolute; top: 14px; right: 18px; z-index: 6;
+  display: flex; flex-direction: column; align-items: flex-end; gap: 2px;
+  background: rgba(255, 255, 255, .88);
+  border-radius: 16px; padding: 8px 16px;
+  box-shadow: 0 4px 14px rgba(40, 60, 110, .18);
+  color: #3a3350; text-align: right;
+}
+.org-badge b { font-size: clamp(12px, 1.25vw, 18px); font-weight: 900; }
+.org-badge span { font-size: clamp(11px, 1.1vw, 16px); font-weight: 700; color: #6a6280; }
+/* 좁은 화면에서는 제목을 가리지 않게 오른쪽 아래로 */
+@media (max-width: 1000px) {
+  .org-badge { top: auto; bottom: 34px; right: 10px; padding: 5px 10px; border-radius: 12px; }
+  .org-badge b { font-size: 10px; }
+  .org-badge span { font-size: 10px; }
+}
+
