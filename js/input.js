@@ -19,7 +19,7 @@ const ACTIONS = [
   'jump',       // X / ☐  — 점프
   'interact',   // Y / ▵  — 상호작용 (사물 조사, 단서 얻기)
   'crouch',     // RB / R1 — 웅크리기
-  'item',       // LB / L1 — 아이템 사용
+  'item',       // LB / L1 — 💡 힌트 보기 (원래 '아이템' 버튼)
   'run',        // A / ✕  — 꾹 누르면 달리기
   'settings',   // B / ○  — 설정
   'pause',      // RT / R2 — 정지
@@ -66,20 +66,25 @@ const ANY_BUTTON = ['interact', 'jump'];
    조종기가 모자라거나, 컴퓨터에서 테스트할 때 쓰는 키야.
    ----------------------------------------------------------- */
 const KEY_MAPS = [
-  { // 🔴 1번 세은 — 왼손 쪽 키
+  // 학생들 요청: "3명이 동시에! 1명은 조이스틱, 1명은 화살표, 1명은 WASD"
+  //   🟢 세은 = 노트북 왼쪽 WASD
+  //   🟡 다영 = 🕹️ 조이스틱 (조이스틱이 없을 때만 IJKL 키)
+  //   🔴 태준 = 노트북 오른쪽 화살표
+  //   item(아이템) 버튼은 💡 힌트 보기로 써!
+  { // 🟢 세은 — 왼손: WASD
     KeyW: 'up', KeyS: 'down', KeyA: 'left', KeyD: 'right',
-    Space: 'jump', KeyE: 'interact', KeyC: 'crouch', KeyQ: 'item',
+    Space: 'jump', KeyE: 'interact', KeyQ: 'item', KeyC: 'crouch',
     ShiftLeft: 'run'
   },
-  { // 🟢 2번 다영 — 방향키 쪽
-    ArrowUp: 'up', ArrowDown: 'down', ArrowLeft: 'left', ArrowRight: 'right',
-    Enter: 'jump', Slash: 'interact', Period: 'crouch', Comma: 'item',
-    ShiftRight: 'run'
-  },
-  { // 🟡 3번 태준 — 오른손 쪽 키
+  { // 🟡 다영 — 조이스틱이 없을 때만 쓰는 IJKL
     KeyI: 'up', KeyK: 'down', KeyJ: 'left', KeyL: 'right',
-    KeyH: 'jump', KeyU: 'interact', KeyN: 'crouch', KeyY: 'item',
+    KeyH: 'jump', KeyU: 'interact', KeyY: 'item', KeyN: 'crouch',
     KeyM: 'run'
+  },
+  { // 🔴 태준 — 오른손: 화살표 (노트북 화살표 바로 옆 키들)
+    ArrowUp: 'up', ArrowDown: 'down', ArrowLeft: 'left', ArrowRight: 'right',
+    Enter: 'jump', Slash: 'interact', Period: 'item', Comma: 'crouch',
+    ShiftRight: 'run'
   }
 ];
 

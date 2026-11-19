@@ -102,6 +102,7 @@ function startGame() {
   for (const stage of STAGES) {
     for (const sec of stage.sections) {
       (sec.objects || []).forEach(o => o.taken = false);
+      sec.hintsShown = 0;                // 💡 힌트도 처음부터
     }
   }
 
@@ -577,6 +578,7 @@ function restartStage() {
   closeLock();
   for (const sec of currentStage().sections) {
     (sec.objects || []).forEach(o => o.taken = false);
+    sec.hintsShown = 0;                  // 💡 힌트도 처음부터
   }
 
   // ⭐ 별은 그대로! (앞 스테이지에서 받은 별은 안 없어져)
@@ -616,6 +618,52 @@ function formatTime(sec, detail = false) {
   const sText = detail ? s.toFixed(1) : String(Math.floor(s));
   return m > 0 ? m + '분 ' + sText + '초' : sText + '초';
 }
+
+
+/* -----------------------------------------------------------
+   💡 힌트 보기
+   학생들 요청: "힌트 추가!"
+   - 방마다 힌트가 3~4개 있고, 누를 때마다 하나씩 더 자세해져
+   - 정답 숫자는 절대 알려주지 않아 (셋이 풀어야 하니까!)
+   - 대신 힌트를 볼 때마다 ⏱ 시계에 +15초 (⭐⭐ 받기가 어려워져)
+   - 본 힌트는 📓 단서 수첩에 남아 있어
+   ----------------------------------------------------------- */
+const HINT_PENALTY = 15;
+
+function showHint() {
+  if (game.screen !== 'game') return;
+  const sec = currentSection();
+  const list = sec.hints || [];
+  sec.hintsShown = sec.hintsShown || 0;
+
+  if (sec.hintsShown >= list.length) {
+    showToast('💡 이 방 힌트는 다 봤어요! 수첩을 다시 읽어 봐요');
+    sound.wrong();
+    return;
+  }
+
+  const n = ++sec.hintsShown;
+  const text = list[n - 1];
+  game.elapsed += HINT_PENALTY;
+  game.clues.push({ kind: 'tip', text: '💡 ' + sec.name + ' 힌트 ' + n + '\n' + text });
+  updateClueBook();
+
+  showToast('💡 힌트 ' + n + '/' + list.length + '  (⏱ +' + HINT_PENALTY + '초)\n' + text);
+  game.toastTime = 360;                  // 힌트는 6초 동안 크게 보여줘
+  sound.clue();
+  updateHintButton();
+}
+
+/* 위쪽 💡 버튼에 '남은 힌트 수'를 보여줘 */
+function updateHintButton() {
+  const sec = currentSection();
+  const left = (sec.hints || []).length - (sec.hintsShown || 0);
+  const el = document.getElementById('hintLeft');
+  if (el && el.textContent !== String(left)) el.textContent = left;
+}
+document.getElementById('hintBtn').addEventListener('click', () => {
+  if (!game.paused && !game.lockOpen) showHint();
+});
 
 
 /* 세 친구 중 누구든 이 버튼을 '방금' 눌렀나? */
@@ -1398,6 +1446,7 @@ function step(now) {
     if (anyonePressed('pause'))    togglePause();
     if (anyonePressed('restart'))  restartStage();
     if (anyonePressed('settings')) openOverlay();
+    if (anyonePressed('item'))     showHint();      // 💡 LB / Q / . / Y
   }
 
   // ⏸ 정지 중
@@ -1420,6 +1469,7 @@ function step(now) {
     document.getElementById('timeGoal').textContent = '/ ⭐⭐ ' + formatTime(goal);
     document.getElementById('timerBox').classList.toggle('late', game.elapsed > goal);
     document.getElementById('starCount').textContent = game.stars;
+    updateHintButton();
   }
 
   input.endFrame();              // '막 눌림' 표시 지우기
@@ -1466,6 +1516,9 @@ function updateClueBook() {
                  (c.icon || '🧠') + ' ' + c.name + '</span>' +
                '<span class="q">' + c.question.replace(/\n/g, '<br>') + '</span>' +
              '</div>';
+    }
+    if (c.kind === 'tip') {
+      return '<div class="clue tip">' + c.text.replace(/\n/g, '<br>') + '</div>';
     }
     return '<div class="clue hint">' + (c.icon || '📜') + ' ' + c.text.replace(/\n/g, '<br>') + '</div>';
   }).join('');
@@ -1620,9 +1673,9 @@ document.getElementById('lockClose').addEventListener('click', closeLock);
    ----------------------------------------------------------- */
 /* 친구마다 쓰는 키보드 키 (js/input.js 의 KEY_MAPS 와 똑같아야 해!) */
 const KEY_HINTS = [
-  { move: ['W', 'A', 'S', 'D'], jump: 'Space', act: 'E' },   // 🟢 세은
-  { move: ['↑', '←', '↓', '→'], jump: 'Enter', act: '/' },   // 🟡 다영
-  { move: ['I', 'J', 'K', 'L'], jump: 'H',     act: 'U' }    // 🔴 태준
+  { move: ['W', 'A', 'S', 'D'], jump: 'Space', act: 'E', hint: 'Q' },   // 🟢 세은 (WASD)
+  { move: ['I', 'J', 'K', 'L'], jump: 'H',     act: 'U', hint: 'Y' },   // 🟡 다영 (조이스틱 없을 때)
+  { move: ['↑', '←', '↓', '→'], jump: 'Enter', act: '/', hint: '.' }    // 🔴 태준 (화살표)
 ];
 
 /* 작은 키 모양 글자 하나 만들기 */
@@ -1637,39 +1690,39 @@ function updatePlayerBar() {
   const bar = document.getElementById('playerBar');
   let html = '';
 
+  // 학생들 요청: "누가 어떤 키로 움직이는지 화면에 항상 떠 있게!"
+  // → 친구마다 '지금 쓰는 조작' 한 줄만 크고 진하게 보여줘
   HEROES.forEach((hero, i) => {
     const pi = input.players[i];
     const hasPad = pi && pi.padIndex !== null;
     const k = KEY_HINTS[i];
 
-    // ⌨️ 키보드 줄과 🕹️ 조이스틱 줄을 둘 다 보여줘.
-    //    지금 쓰고 있는 쪽은 진하게(on), 안 쓰는 쪽은 흐리게!
-    const keyboardRow =
-      '<div class="keys' + (hasPad ? '' : ' on') + '">' +
-        '<span class="dev">⌨️</span>' +
-        '<span class="lab">이동</span>' + k.move.map(cap).join('') +
-        '<span class="lab">점프</span>' + cap(k.jump) +
-        '<span class="lab">조사</span>' + cap(k.act) +
-      '</div>';
-
-    // 처음 보는 DINPUT 조이스틱이면 '아무 버튼 = 조사'라고 알려줘
-    const anyBtn = hasPad && pi.padKind === 'any';
-    const joystickRow =
-      '<div class="keys' + (hasPad ? ' on' : '') + '">' +
-        '<span class="dev">🕹️</span>' +
+    let how, src;
+    if (hasPad) {
+      // 처음 보는 DINPUT 조이스틱이면 '아무 버튼 = 조사'
+      const anyBtn = pi.padKind === 'any';
+      src = '🕹️ 조이스틱';
+      how =
         '<span class="lab">이동</span>' + cap('스틱') +
         (anyBtn
           ? '<span class="lab">조사</span>' + cap('아무 버튼')
           : '<span class="lab">점프</span>' + cap('X') +
             '<span class="lab">조사</span>' + cap('Y') +
-            '<span class="lab">달리기</span>' + cap('A꾹')) +
-      '</div>';
+            '<span class="lab">💡힌트</span>' + cap('LB'));
+    } else {
+      src = i === 0 ? '⌨️ 왼쪽 키보드' : i === 2 ? '⌨️ 화살표 키' : '⌨️ 키보드';
+      how =
+        '<span class="lab">이동</span>' + k.move.map(cap).join('') +
+        '<span class="lab">점프</span>' + cap(k.jump) +
+        '<span class="lab">조사</span>' + cap(k.act) +
+        '<span class="lab">💡힌트</span>' + cap(k.hint);
+    }
 
-    // 조이스틱을 못 찾았을 때, 조이스틱 1번 주인 칸에 해결 방법을 보여줘
-    let src = hasPad ? '🕹️ 조이스틱 ' + (pi.padSlot + 1) + '번 연결됨' : '⌨️ 키보드로 하는 중';
+    // 조이스틱을 못 찾았을 때, 조이스틱 주인 칸에 해결 방법을 보여줘
+    let warn = '';
     if (!hasPad && input.connectedPadCount() === 0 && input.padOwner[0] === i) {
-      src = IS_MAC ? '🕹️ 못 찾음 → 스위치 <b>DINPUT/PS3</b> + USB 다시 꽂기'
-                   : '🕹️ 못 찾음 → 조이스틱 버튼 한 번 누르기';
+      warn = '<div class="warn">' + (IS_MAC ? '🕹️ 조이스틱 못 찾음 → 스위치 <b>DINPUT/PS3</b> + USB 다시 꽂기'
+                                            : '🕹️ 조이스틱 못 찾음 → 조이스틱 버튼 한 번 누르기') + '</div>';
     }
 
     html +=
@@ -1679,7 +1732,7 @@ function updatePlayerBar() {
           '<b>' + hero.name + '</b>' +
           '<span class="src">' + src + '</span>' +
         '</div>' +
-        keyboardRow + joystickRow +
+        '<div class="keys on">' + how + '</div>' + warn +
       '</div>';
   });
 
@@ -1687,14 +1740,9 @@ function updatePlayerBar() {
   html +=
     '<div class="pcard common">' +
       '<div class="who"><b>모두</b></div>' +
-      '<div class="keys on"><span class="dev">⌨️</span>' +
-        '<span class="lab">정지</span>' + cap('P') +
-        '<span class="lab">다시</span>' + cap('R') +
-      '</div>' +
-      '<div class="keys on"><span class="dev">🕹️</span>' +
-        '<span class="lab">정지</span>' + cap('RT') +
-        '<span class="lab">다시</span>' + cap('LT') +
-        '<span class="lab">설정</span>' + cap('B') +
+      '<div class="keys on">' +
+        '<span class="lab">정지</span>' + cap('P') + cap('RT') +
+        '<span class="lab">다시</span>' + cap('R') + cap('LT') +
       '</div>' +
     '</div>';
 
@@ -1786,8 +1834,7 @@ function buildGuides() {
     ['방향 스틱', '네 방향으로 움직이기'],
     ['X / ☐',    '점프'],
     ['Y / ▵',    '상호작용 (사물 조사)'],
-    ['RB / R1',  '웅크리기'],
-    ['LB / L1',  '아이템 사용'],
+    ['LB / L1',  '💡 힌트 보기'],
     ['A / ✕ (꾹)', '달리기'],
     ['B / ○',    '설정'],
     ['RT / R2',  '정지'],
@@ -1800,11 +1847,11 @@ function buildGuides() {
   // --- 키보드 안내 ---
   const keyRows = [
     ['W A S D',      '🟢 세은 움직이기'],
-    ['Space / E',    '🟢 세은 점프 / 상호작용'],
-    ['↑ ↓ ← →',      '🟡 다영 움직이기'],
-    ['Enter / /',    '🟡 다영 점프 / 상호작용'],
-    ['I J K L',      '🔴 태준 움직이기'],
-    ['H / U',        '🔴 태준 점프 / 상호작용'],
+    ['Space / E / Q', '🟢 세은 점프 / 조사 / 💡힌트'],
+    ['↑ ↓ ← →',      '🔴 태준 움직이기'],
+    ['Enter / / / .', '🔴 태준 점프 / 조사 / 💡힌트'],
+    ['I J K L',      '🟡 다영 움직이기 (조이스틱 없을 때)'],
+    ['H / U / Y',    '🟡 다영 점프 / 조사 / 💡힌트'],
     ['Shift (꾹)',   '달리기'],
     ['P / Esc',      '정지'],
     ['R',            '다시하기 (이 스테이지 처음부터)']
