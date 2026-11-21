@@ -24,6 +24,10 @@ const SKIN_LIST = [
 
   // 🏠 배경
   { group: '배경', file: 'start-bg.png',     label: '시작 화면 배경', size: '1920×1080' },
+  { group: '배경', file: 'title.png',        label: '시작 화면 제목 글씨 (배경 투명)', size: '830×480' },
+  { group: '배경', file: 'start-hearts.png', label: '❤️ 시작 화면 오른쪽 위 하트 (배경 투명)', size: '330×90' },
+  { group: '배경', file: 'btn-play.png',     label: '▶ PLAY 버튼 (배경 투명)',     size: '570×190' },
+  { group: '배경', file: 'btn-settings.png', label: '⚙ SETTINGS 버튼 (배경 투명)', size: '570×190' },
   { group: '배경', file: 'floor-plane.png',  label: '✈️ 비행기 바닥',  size: '960×540' },
   { group: '배경', file: 'floor-school.png', label: '🏫 폐교 바닥',    size: '960×540' },
   // 방마다 바닥을 다르게 하고 싶으면 (있으면 위의 스테이지 바닥보다 먼저 써)
@@ -104,6 +108,7 @@ function loadSkins() {
     img.onload = () => {
       SKINS[s.file] = img;
       if (s.file === 'start-bg.png') useStartBackground(img);
+      useStartArt(s.file, img);
       for (const fn of skinListeners) fn(s.file);
     };
     img.onerror = () => { /* 그림이 없으면 원래 손그림을 써 — 괜찮아! */ };
@@ -117,6 +122,31 @@ function useStartBackground(img) {
   if (!start) return;
   start.style.backgroundImage = 'url("' + img.src + '")';
   start.classList.add('custom-bg');
+}
+
+/* 시작 화면 제목·버튼 그림이 있으면 글씨 대신 그 그림을 보여줘
+   (글씨는 숨기기만 해서, 그림이 없으면 원래 글씨가 그대로 나와) */
+function useStartArt(file, img) {
+  if (file === 'start-hearts.png') {           // 하트는 오른쪽 위에 따로 붙여
+    const start = document.getElementById('screen-start');
+    if (!start || start.querySelector('.start-hearts')) return;
+    const h = document.createElement('img');
+    h.src = img.src; h.className = 'start-hearts'; h.alt = '';
+    start.appendChild(h);
+    start.classList.add('has-hearts');
+    return;
+  }
+  const place = { 'title.png': '#screen-start .title',
+                  'btn-play.png': '#startBtn',
+                  'btn-settings.png': '#settingsBtn' }[file];
+  const el = place && document.querySelector(place);
+  if (!el) return;
+  const pic = document.createElement('img');
+  pic.src = img.src;
+  pic.className = 'skin-pic';
+  pic.alt = el.textContent.trim();
+  el.appendChild(pic);
+  el.classList.add('has-pic');
 }
 
 /* 이 이름의 그림이 있으면 돌려주고, 없으면 null */

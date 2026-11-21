@@ -719,7 +719,7 @@
 
 /* 움직임 줄이기 설정을 켜면 여기 애니메이션도 멈춰줘 */
 @media (prefers-reduced-motion: reduce) {
-  .menu-on, .menu-on::before, .press-hint, .screen.active .title {
+  .menu-on, .menu-on::before, .press-hint, .screen.active .title, .screen.active .title.has-pic {
     animation: none !important;
   }
   .menu-on { outline: 5px solid #ffe36b; outline-offset: 4px; }
@@ -846,9 +846,46 @@
    하늘·구름·언덕·잔디를 숨기고 그 그림을 화면 가득 깔아줘
    =========================================================== */
 #screen-start.custom-bg {
+  background-color: #d8eeff;      /* 원팀 그림의 하늘색 (그림이 안 닿는 곳도 같은 색) */
   background-size: cover;
-  background-position: center;
+  background-position: center bottom; /* 잔디가 늘 보이게 아래에 맞춰 (하트는 따로 붙여) */
 }
+/* 원팀 배경은 밝은 하늘이라 흰 글씨 대신 진한 글씨로 */
+#screen-start.custom-bg .story { color: #3a3350; text-shadow: none; background: rgba(255,255,255,.78);
+  padding: 4px 18px; border-radius: 16px; }
+#screen-start.custom-bg .story b { color: #e0457a; }
+#screen-start.custom-bg .press-hint { color: #3a3350; text-shadow: none; background: rgba(255,255,255,.88);
+  padding: 4px 14px; border-radius: 999px; }
+#screen-start.custom-bg .press-hint b { color: #e0457a; }
+/* ❤️ 오른쪽 위 하트 (images/start-hearts.png) — 그 바로 아래에 이름표 */
+.start-hearts {
+  position: absolute; top: 0; right: 5vw; z-index: 5;
+  width: clamp(130px, 17vw, 330px); image-rendering: pixelated; pointer-events: none;
+}
+#screen-start.has-hearts .org-badge { top: calc(clamp(130px, 17vw, 330px) * .28 + 8px); }
+@media (max-width: 1000px) { #screen-start.has-hearts .org-badge { top: auto; } }
+
+/* 🎨 원팀이 그린 제목·버튼 그림 (images/title.png, btn-play.png, btn-settings.png) */
+.has-pic > :not(.skin-pic) { display: none; }
+.skin-pic { display: block; pointer-events: none; }
+.title.has-pic { transform: none; -webkit-text-stroke: 0; text-shadow: none; }
+.title.has-pic { margin-bottom: clamp(6px, 2vh, 20px); }
+.title.has-pic .skin-pic { width: clamp(220px, 34vw, 560px); max-height: 25vh; object-fit: contain;
+  filter: drop-shadow(0 6px 0 rgba(0,0,0,.12)); }
+.screen.active .title.has-pic { animation: titleDropFlat .6s cubic-bezier(.2, 1.5, .4, 1); }
+@keyframes titleDropFlat {
+  0%   { transform: translateY(-90px) scale(.6); opacity: 0; }
+  100% { transform: translateY(0)     scale(1);  opacity: 1; }
+}
+.wood.has-pic, .wood.has-pic:hover, .wood.has-pic:active {
+  background: none; box-shadow: none; padding: 0; border-radius: 0;
+  font-size: 0; color: transparent;      /* 원래 글씨(Play/Setting)는 숨겨 */
+}
+.wood.has-pic.menu-on::before { font-size: clamp(20px, 2.4vw, 34px); color: #f5c518; }
+.wood-buttons:has(.has-pic) { gap: 8px; }
+.wood.has-pic .skin-pic { width: clamp(170px, 20vw, 300px); max-height: 11vh; object-fit: contain; image-rendering: pixelated; }
+.wood.small.has-pic .skin-pic { width: clamp(150px, 17vw, 250px); max-height: 9vh; }
+.wood.has-pic:active .skin-pic { transform: translateY(3px); }
 #screen-start.custom-bg .sky,
 #screen-start.custom-bg .cloud,
 #screen-start.custom-bg .hills,

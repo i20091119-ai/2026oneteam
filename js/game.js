@@ -884,8 +884,15 @@ function draw() {
     line1 = '같은 색 친구가 같은 색 버튼을 밟고 있어야 문이 열려요!';
     line2 = '셋이 모두 🚪출구에 모이면 다음 방으로!';
   }
+  // 어두운 바닥(🚀 우주선)에서도 읽히게 하얀 테두리를 둘러줘
+  ctx.lineWidth = 4;
+  ctx.lineJoin = 'round';
+  ctx.strokeStyle = 'rgba(255,255,255,.85)';
+  ctx.fillStyle = '#5a5070';
+  ctx.strokeText(line1, CANVAS_W / 2, 30);
   ctx.fillText(line1, CANVAS_W / 2, 30);
   ctx.font = 'bold 13px sans-serif';
+  ctx.strokeText(line2, CANVAS_W / 2, 50);
   ctx.fillText(line2, CANVAS_W / 2, 50);
 
   // --- 💬 잠깐 뜨는 알림 글씨 ---

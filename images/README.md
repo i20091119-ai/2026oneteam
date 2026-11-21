@@ -20,6 +20,10 @@
 | 🟡 다영 | `hero-dayoung.png` | 200×300 |
 | 🔴 태준 | `hero-taejun.png` | 200×300 |
 | 시작 화면 배경 | `start-bg.png` | 1920×1080 |
+| 시작 화면 제목 글씨 (배경 투명) | `title.png` | 830×480 |
+| ▶ PLAY 버튼 / ⚙ SETTINGS 버튼 (배경 투명) | `btn-play.png`, `btn-settings.png` | 570×190 |
+| ❤️ 시작 화면 오른쪽 위 하트 (배경 투명) | `start-hearts.png` | 330×90 |
+| 🚀 우주선 바닥 | `floor-space.png` | 960×540 |
 | ✈️ 비행기 바닥 | `floor-plane.png` | 960×540 |
 | 🏫 폐교 바닥 | `floor-school.png` | 960×540 |
 | 방마다 바닥 (선택) | `floor-plane-1.png` ~ `floor-plane-3.png`, `floor-school-1.png` ~ `floor-school-3.png` | 960×540 |
@@ -44,10 +48,18 @@
 - 흰 배경을 지우고(투명), 그림 위 이름 글씨를 빼고, 게임에 맞는 크기로 줄였어요.
 - 친구 옷 색은 게임의 문·버튼 색에 맞게 바꿨어요: 세은 멜빵바지 → 🟢연두, 다영 멜빵바지 → 🟡노랑, 태준 티셔츠 → 🔴빨강
 - `floor-school.png` (🏫 폐교 나무 바닥)은 2026-11-21에 원팀이 보내 준 나무 바닥 그림으로 바꿨어요. 이어 붙인 자국이 보여서, 자국 없는 한 조각을 잘라 이음매 없이 이어 붙였어요.
+- 2026-11-21 원팀 Canva 배경 6장을 넣었어요:
+  - 울타리·잔디·구름 그림 → `start-bg.png` (시작 화면 배경). 오른쪽 위 하트는 `start-hearts.png`로 따로 떼어서 화면 오른쪽 위에 붙였어요
+    (화면 모양이 달라도 잔디가 늘 보이게 배경은 아래쪽에 맞추고, 하트는 위에 따로 둬요). 하트 뒤에 가려졌던 구름 윗부분은 Claude가 둥글게 이어 그렸어요.
+  - 알록달록 '우리 함께 GO!' 글씨 → `title.png` (시작 화면 제목)
+  - PLAY · SETTINGS 버튼 → `btn-play.png`, `btn-settings.png` (시작 화면 버튼)
+  - 하늘색 빈 배경 → 게임 화면 뒤 바탕색 (#d8eeff)
+  - 남색 줄무늬 → `floor-space.png` (🚀 우주선 바닥 — 깜깜한 우주 느낌)
+  - 나무 바닥 → `floor-school.png` (🏫 폐교 바닥)
 - 원팀 그림이 없던 8장은 원팀 그림 느낌에 맞춰 Claude가 그렸어요 (언제든 우리 그림으로 바꿔도 돼요):
-  `start-bg.png` (원팀 시작 화면 구도: 하늘 · 구름 · 갈색 뾰족 언덕 · 연두 잔디 + 비행기 · 학교), `floor-plane.png`,
+  `floor-plane.png`,
   `furniture-clock.png`, `lock.png`, `door-exit-school.png`, `furniture-board-plane.png`, `furniture-chair-plane.png` (원팀 좌석 그림을 남색으로 칠함)
-  (처음엔 `floor-school.png`도 Claude 그림이었는데 원팀 그림으로 바뀌었어요)
+  (처음엔 `start-bg.png`, `floor-school.png`도 Claude 그림이었는데 원팀 그림으로 바뀌었어요)
 - 인터넷에서 가져온 그림이 있다면 어디서 가져왔는지 여기에 적어 두세요: (출처: )
 
 > 바닥 그림 위에 **벽은 게임이 따로 그려요** (부딪히는 곳이라서). 바닥 그림에는 벽을 안 그려도 돼요.
